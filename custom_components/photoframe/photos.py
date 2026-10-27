@@ -1,7 +1,9 @@
 """Фото на сервере: рамка только загружает файл и показывает готовый кадр — вся обработка здесь.
 
 - Загрузка (POST /api/photoframe/upload): поворот по EXIF, HEIC → JPEG, оригинал уменьшается до MAX_SIDE.
-- Показ (GET /api/photoframe/photo/<путь>?w=1280): кадр нужной ширины, один раз уменьшается и лежит в кэше.
+- Показ (GET /api/photoframe/photo/<путь>?w=1280&h=800): кадр под экран рамки — ровно такой, чтобы закрыть
+  экран (не мельче — иначе мыло, не крупнее — лишние байты); один раз уменьшается и лежит в JPEG-кэше.
+  HEIC, положенные в папку напрямую, рамка тоже получает JPEG. Кэш, который не запрашивали 7 дней, удаляется.
   Ссылки подписаны (authSig) — <img> на рамке не может послать заголовок авторизации.
 - Список (photoframe/photos): фото папки или альбома со ссылками под ширину экрана рамки.
 """
@@ -10,6 +12,8 @@ from __future__ import annotations
 import hashlib
 import io
 import logging
+import os
+import time
 import re
 from datetime import timedelta
 from urllib.parse import quote
@@ -24,6 +28,7 @@ from homeassistant.components.http import HomeAssistantView, KEY_HASS
 from homeassistant.components.http.auth import async_sign_path
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
+from homeassistant.helpers.event import async_track_time_interval
 
 from .const import ALBUM_ALL, CONF_EDIT, CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER, DOMAIN, EDIT_ADMINS
 from .store import media_source_dir
@@ -31,7 +36,9 @@ from .store import media_source_dir
 _LOGGER = logging.getLogger(__name__)
 
 MAX_SIDE = 2560  # оригинал в медиатеке — больше рамкам не нужно
-WIDTHS = (640, 960, 1280, 1920, 2560)  # ширины кэша: рамка просит свою, получает ближайшую сверху
+STEP = 160  # размеры экрана округляются вверх до кратных — меньше вариантов в кэше
+MAX_REQUEST = 3840
+CACHE_DAYS = 7
 QUALITY = 86
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".gif", ".bmp"}
 URL_PHOTO = "/api/photoframe/photo"
@@ -94,12 +101,19 @@ def _process(data: bytes, target_dir: Path, name: str) -> str:
         return out.name
 
 
-def _resized(src: Path, cache_dir: Path, width: int) -> Path:
-    """Кадр нужной ширины из кэша; нет — сделать. Ключ — путь, время изменения и ширина."""
+def _bucket(value: int) -> int:
+    return max(STEP, min(MAX_REQUEST, -(-value // STEP) * STEP))
+
+
+def _resized(src: Path, cache_dir: Path, width: int, height: int) -> Path:
+    """Кадр под экран width×height из кэша; нет — сделать. Ключ — путь, время изменения и размер экрана.
+    Масштаб — чтобы кадр закрыл экран целиком (как cover); больше оригинала не увеличиваем."""
     stat = src.stat()
-    key = hashlib.sha1(f"{src}|{stat.st_mtime_ns}|{width}".encode()).hexdigest()
+    key = hashlib.sha1(f"{src}|{stat.st_mtime_ns}|{width}x{height}".encode()).hexdigest()
     out = cache_dir / f"{key}.jpg"
     if out.exists():
+        # Запросили — кадр живёт ещё 7 дней (чистка смотрит на время изменения).
+        os.utime(out)
         return out
     from PIL import Image, ImageOps  # noqa: PLC0415
 
@@ -108,8 +122,9 @@ def _resized(src: Path, cache_dir: Path, width: int) -> Path:
         img = ImageOps.exif_transpose(img)
         if img.mode not in ("RGB", "L"):
             img = img.convert("RGB")
-        if img.width > width:
-            img = img.resize((width, round(img.height * width / img.width)), Image.Resampling.LANCZOS)
+        scale = min(1.0, max(width / img.width, height / img.height))
+        if scale < 1.0:
+            img = img.resize((max(1, round(img.width * scale)), max(1, round(img.height * scale))), Image.Resampling.LANCZOS)
         tmp = out.with_suffix(".tmp")
         img.save(tmp, "JPEG", quality=82, optimize=True)
         tmp.replace(out)
@@ -180,13 +195,13 @@ class PhotoView(HomeAssistantView):
         if src is None or not src.is_file():
             raise web.HTTPNotFound
         try:
-            width = int(request.query.get("w", WIDTHS[-1]))
+            width = _bucket(int(request.query.get("w", MAX_SIDE)))
+            height = _bucket(int(request.query.get("h", width)))
         except ValueError:
-            width = WIDTHS[-1]
-        width = next((w for w in WIDTHS if w >= width), WIDTHS[-1])
-        cache_dir = Path(hass.config.path(".storage", "photoframe_cache"))
+            width = height = MAX_SIDE
+        cache_dir = _cache_dir(hass)
         try:
-            out = await hass.async_add_executor_job(_resized, src, cache_dir, width)
+            out = await hass.async_add_executor_job(_resized, src, cache_dir, width, height)
         except Exception as err:  # noqa: BLE001
             _LOGGER.info("Photo Frame: не удалось уменьшить %s: %s", src, err)
             raise web.HTTPUnsupportedMediaType from err
@@ -198,6 +213,7 @@ class PhotoView(HomeAssistantView):
         vol.Required("type"): "photoframe/photos",
         vol.Optional("album", default=ALBUM_ALL): str,
         vol.Optional("width", default=1920): vol.All(int, vol.Range(min=160, max=8000)),
+        vol.Optional("height"): vol.All(int, vol.Range(min=160, max=8000)),
     }
 )
 @websocket_api.async_response
@@ -213,13 +229,14 @@ async def ws_photos(hass: HomeAssistant, connection: websocket_api.ActiveConnect
         connection.send_error(msg["id"], "bad_album", "Bad album")
         return
     rels = await hass.async_add_executor_job(_list, root, album)
-    width = next((w for w in WIDTHS if w >= msg["width"]), WIDTHS[-1])
+    width = _bucket(msg["width"])
+    height = _bucket(msg.get("height", msg["width"]))
     photos = [
         {
             "id": rel,
             # Ширина — внутри подписи: подпись HA учитывает и параметры адреса.
             "url": async_sign_path(
-                hass, f"{URL_PHOTO}/{quote(rel)}?w={width}", timedelta(days=1), refresh_token_id=connection.refresh_token_id
+                hass, f"{URL_PHOTO}/{quote(rel)}?w={width}&h={height}", timedelta(days=1), refresh_token_id=connection.refresh_token_id
             ),
         }
         for rel in rels
@@ -227,8 +244,36 @@ async def ws_photos(hass: HomeAssistant, connection: websocket_api.ActiveConnect
     connection.send_result(msg["id"], {"photos": photos, "count": len(photos), "heic": HEIC})
 
 
+def _cache_dir(hass: HomeAssistant) -> Path:
+    return Path(hass.config.path(".storage", "photoframe_cache"))
+
+
+def _cleanup(cache_dir: Path) -> int:
+    """Удалить кадры, которые не запрашивали CACHE_DAYS дней. Возвращает, сколько удалено."""
+    if not cache_dir.is_dir():
+        return 0
+    border = time.time() - CACHE_DAYS * 86400
+    removed = 0
+    for path in cache_dir.iterdir():
+        try:
+            if path.is_file() and path.stat().st_mtime < border:
+                path.unlink()
+                removed += 1
+        except OSError:
+            continue
+    return removed
+
+
 @callback
 def async_setup(hass: HomeAssistant) -> None:
+    async def cleanup(_now: Any = None) -> None:
+        removed = await hass.async_add_executor_job(_cleanup, _cache_dir(hass))
+        if removed:
+            _LOGGER.debug("Photo Frame: из кэша удалено %s кадров", removed)
+
+    # Чистим при запуске и дальше раз в 12 часов.
+    hass.async_create_background_task(cleanup(), "photoframe cache cleanup")
+    async_track_time_interval(hass, cleanup, timedelta(hours=12), cancel_on_shutdown=True)
     hass.http.register_view(PhotoUploadView())
     hass.http.register_view(PhotoView())
     websocket_api.async_register_command(hass, ws_photos)
