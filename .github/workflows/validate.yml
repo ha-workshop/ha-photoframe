@@ -27,4 +27,10 @@ jobs:
           node-version: 22
           cache: npm
           cache-dependency-path: frontend/package-lock.json
+      # Проверка сборки APK — одноразовым ключом (настоящий ключ подписи есть только у релиза).
+      - name: Throwaway signing key
+        run: |
+          keytool -genkeypair -keystore "$RUNNER_TEMP/check.keystore" -storepass android -keypass android \
+            -alias check -keyalg RSA -keysize 2048 -validity 1 -dname CN=check -noprompt
+          echo "KEYSTORE=$RUNNER_TEMP/check.keystore" >> "$GITHUB_ENV"
       - run: scripts/build-frontend.sh zip

@@ -52,6 +52,12 @@ layout, charts — is described in [lovelace-photoframe](https://github.com/ha-w
 3. *Settings → Devices & services → Add integration → Photo Frame*.
 4. Add the **Photo Frame** card to a dashboard (a *Panel* view works best) or open `/photoframe/` on a device.
 
+**Android frame** (wall tablet, old Android 5+): install the frame app — Home Assistant serves it at
+`http://<your-ha>/photoframe/photoframe.apk` (it's also attached to every release). Open it, enter the Home Assistant
+address, sign in. Photos are drawn natively (smooth even on weak tablets); the app starts on power-up, keeps
+Wi-Fi awake and can switch the screen off completely for the **Screen** entity. Updating the integration updates
+the APK served by Home Assistant — install it over the old one, the frame keeps its settings.
+
 Already using the **Photo Frame card** from HACS (category Dashboard)? On first start the integration
 copies your homes and screens from the card on the *Photo Frame* dashboard. You can keep the card
 installed — the integration notices it and doesn't load a second copy — or remove it.

@@ -90,10 +90,10 @@ class PwaRedirectView(HomeAssistantView):
 
 
 class PwaNoCacheView(HomeAssistantView):
-    """index.html, sw.js и манифест — без кэша: иначе после обновления интеграции рамка ещё долго берёт старую
-    страницу из кэша браузера. Файлы сборки (assets/ с хэшем в имени) кэшируются как обычно."""
+    """index.html, sw.js, манифест и APK рамки — без кэша: иначе после обновления интеграции рамка ещё долго
+    берёт старое из кэша браузера. Файлы сборки (assets/ с хэшем в имени) кэшируются как обычно."""
 
-    url = URL_PWA + r"/{name:(?:index\.html|sw\.js|manifest\.webmanifest)}"
+    url = URL_PWA + r"/{name:(?:index\.html|sw\.js|manifest\.webmanifest|photoframe\.apk)}"
     name = "photoframe:pwa:nocache"
     requires_auth = False
 
@@ -101,7 +101,11 @@ class PwaNoCacheView(HomeAssistantView):
         path = FRONTEND / "pwa" / name
         if not path.is_file():
             raise web.HTTPNotFound
-        return web.FileResponse(path, headers={"Cache-Control": "no-cache"})
+        headers = {"Cache-Control": "no-cache"}
+        if name.endswith(".apk"):
+            # С этим типом Android сразу предлагает установить скачанный APK.
+            headers["Content-Type"] = "application/vnd.android.package-archive"
+        return web.FileResponse(path, headers=headers)
 
 
 async def _async_register_frontend(hass: HomeAssistant) -> None:
