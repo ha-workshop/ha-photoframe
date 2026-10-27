@@ -1,0 +1,52 @@
+next_photo:
+  fields:
+    device_id:
+      selector:
+        device:
+          integration: photoframe
+          multiple: true
+
+show_camera:
+  fields:
+    camera:
+      required: true
+      selector:
+        entity:
+          domain: camera
+    duration:
+      default: 30
+      selector:
+        number:
+          min: 5
+          max: 3600
+          unit_of_measurement: s
+    device_id:
+      selector:
+        device:
+          integration: photoframe
+          multiple: true
+
+show_screen:
+  fields:
+    screen:
+      required: true
+      example: "Квартира · Камеры"
+      selector:
+        text:
+    device_id:
+      selector:
+        device:
+          integration: photoframe
+          multiple: true
+
+set_album:
+  fields:
+    album:
+      example: "Дача"
+      selector:
+        text:
+    device_id:
+      selector:
+        device:
+          integration: photoframe
+          multiple: true

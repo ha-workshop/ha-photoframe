@@ -44,5 +44,100 @@
         "users": "All HA users"
       }
     }
+  },
+  "entity": {
+    "binary_sensor": {
+      "online": {
+        "name": "Online"
+      }
+    },
+    "select": {
+      "album": {
+        "name": "Album",
+        "state": {
+          "all": "All photos"
+        }
+      },
+      "start_screen": {
+        "name": "Start screen"
+      }
+    },
+    "sensor": {
+      "photo": {
+        "name": "Current photo"
+      }
+    },
+    "button": {
+      "next_photo": {
+        "name": "Next photo"
+      },
+      "show_panel": {
+        "name": "Open panel"
+      },
+      "show_photos": {
+        "name": "Back to photos"
+      },
+      "reload": {
+        "name": "Reload"
+      }
+    }
+  },
+  "services": {
+    "next_photo": {
+      "name": "Next photo",
+      "description": "Show the next photo on frames.",
+      "fields": {
+        "device_id": {
+          "name": "Frames",
+          "description": "None selected — all online frames."
+        }
+      }
+    },
+    "show_camera": {
+      "name": "Show camera",
+      "description": "Open a camera on frames for a while — e.g. when the doorbell rings.",
+      "fields": {
+        "camera": {
+          "name": "Camera",
+          "description": "Which camera to show."
+        },
+        "duration": {
+          "name": "Duration",
+          "description": "Seconds before going back to photos."
+        },
+        "device_id": {
+          "name": "Frames",
+          "description": "None selected — all online frames."
+        }
+      }
+    },
+    "show_screen": {
+      "name": "Show screen",
+      "description": "Open the panel on frames at a given screen.",
+      "fields": {
+        "screen": {
+          "name": "Screen",
+          "description": "As in the “Start screen” list (“Apartment · Cameras”) or “home/screen”."
+        },
+        "device_id": {
+          "name": "Frames",
+          "description": "None selected — all online frames."
+        }
+      }
+    },
+    "set_album": {
+      "name": "Set album",
+      "description": "Which photo subfolder frames show.",
+      "fields": {
+        "album": {
+          "name": "Album",
+          "description": "A subfolder of the photo folder; empty — all photos."
+        },
+        "device_id": {
+          "name": "Frames",
+          "description": "None selected — all frames."
+        }
+      }
+    }
   }
 }

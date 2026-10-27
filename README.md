@@ -25,6 +25,20 @@ everything with it — no separate dashboard card, no add-ons, no long-lived tok
 - **Settings in the UI** — *Settings → Devices & services → Photo Frame → Configure*: photo folder,
   kiosk mode by default, who may change homes and screens (admins or all users).
 
+## Every frame is a device
+
+Each frame that opens the app (APK, browser, *Add to Home Screen*) shows up in *Settings → Devices* with:
+
+- **Online** — while the frame is connected;
+- **Album** — a subfolder of the photo folder (`/media/photoframe/<album>`), or *All photos*;
+- **Start screen** — where the frame starts and returns to when left alone;
+- **Current photo** — with the photo as the entity picture;
+- buttons **Next photo**, **Open panel**, **Back to photos**, **Reload**.
+
+Services for automations (pick frames as devices; none — all online frames):
+`photoframe.show_camera` (e.g. the doorbell rang — show the porch camera for 30 s), `photoframe.set_album`,
+`photoframe.show_screen`, `photoframe.next_photo`. Rename a frame like any device — the frame picks the name up.
+
 The interface itself — photo screen like the iPhone lock screen, screens per home, a separate phone
 layout, charts — is described in [lovelace-photoframe](https://github.com/ha-workshop/lovelace-photoframe).
 
