@@ -33,6 +33,9 @@ Each frame that opens the app (APK, browser, *Add to Home Screen*) shows up in *
 - **Album** — a subfolder of the photo folder (`/media/photoframe/<album>`), or *All photos*;
 - **Start screen** — where the frame starts and returns to when left alone;
 - **Current photo** — with the photo as the entity picture;
+- **Screen** — a light: off puts the frame to sleep (black screen, slideshow paused; a touch wakes it),
+  brightness dims it (real backlight in the APK, a dark overlay in a browser). Turn it off at night
+  and on from a motion sensor with an ordinary automation;
 - buttons **Next photo**, **Open panel**, **Back to photos**, **Reload**.
 
 Services for automations (pick frames as devices; none — all online frames):

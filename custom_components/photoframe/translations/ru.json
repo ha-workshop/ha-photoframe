@@ -80,6 +80,11 @@
       "reload": {
         "name": "Перезагрузить"
       }
+    },
+    "light": {
+      "screen": {
+        "name": "Экран"
+      }
     }
   },
   "services": {

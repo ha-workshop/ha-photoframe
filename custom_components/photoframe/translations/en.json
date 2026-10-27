@@ -80,6 +80,11 @@
       "reload": {
         "name": "Reload"
       }
+    },
+    "light": {
+      "screen": {
+        "name": "Screen"
+      }
     }
   },
   "services": {
