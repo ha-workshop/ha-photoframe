@@ -70,7 +70,13 @@ class PwaRedirectView(HomeAssistantView):
 
 
 async def _async_register_frontend(hass: HomeAssistant) -> None:
-    """Раздать PWA и карточку; карточку подключить ко всем дашбордам, если её не поставили отдельно."""
+    """Раздать PWA и карточку и подключить карточку ко всем дашбордам.
+
+    Свою карточку подключаем всегда, даже если отдельно стоит Dashboard-карточка из HACS: наш скрипт
+    грузится раньше ресурсов дашбордов, а элемент регистрируется только один раз — работает версия
+    из интеграции. Угадывать «стоит ли отдельная карточка» по ресурсам ненадёжно: после удаления из HACS
+    ресурс часто остаётся, а HACS уже не отдаёт файл — и карточки не было бы совсем.
+    """
     flags = hass.data.setdefault(DOMAIN, {})
     if flags.get("frontend"):
         return
@@ -90,35 +96,7 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
     await hass.http.async_register_static_paths(paths)
 
     if card.is_file():
-        if await _card_installed_separately(hass):
-            _LOGGER.info("Photo Frame: карточка уже подключена ресурсом дашборда (HACS) — свою не добавляем")
-        else:
-            # В адресе — версия и время сборки: после обновления браузер не возьмёт старую карточку из кэша.
-            version = (await async_get_integration(hass, DOMAIN)).version
-            built = int(card.stat().st_mtime)
-            add_extra_js_url(hass, f"{URL_CARD}?v={version}-{built}")
-
-
-async def _card_installed_separately(hass: HomeAssistant) -> bool:
-    """Карточка стоит отдельно (Dashboard-репозиторий в HACS) — две копии одного элемента не нужны."""
-    try:
-        from homeassistant.components.lovelace.const import LOVELACE_DATA  # noqa: PLC0415
-
-        resources = hass.data[LOVELACE_DATA].resources
-        if hasattr(resources, "loaded") and not resources.loaded:
-            await resources.async_load()
-            resources.loaded = True
-        urls = [str(item.get("url", "")) for item in resources.async_items()]
-    except Exception:  # noqa: BLE001 — ресурсы в YAML или внутреннее API поменялось
-        return False
-    return any(_card_file_exists(hass, url) for url in urls if "photoframe-card.js" in url)
-
-
-def _card_file_exists(hass: HomeAssistant, url: str) -> bool:
-    """Ресурс из HACS (/hacsfiles/…) после удаления карточки иногда остаётся — без файла он не в счёт."""
-    path = url.split("?")[0]
-    if path.startswith("/hacsfiles/"):
-        return Path(hass.config.path("www", "community", path[len("/hacsfiles/"):])).is_file()
-    if path.startswith("/local/"):
-        return Path(hass.config.path("www", path[len("/local/"):])).is_file()
-    return True
+        # В адресе — версия и время сборки: после обновления браузер не возьмёт старую карточку из кэша.
+        version = (await async_get_integration(hass, DOMAIN)).version
+        built = int(card.stat().st_mtime)
+        add_extra_js_url(hass, f"{URL_CARD}?v={version}-{built}")
