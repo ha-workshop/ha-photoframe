@@ -89,6 +89,21 @@ class PwaRedirectView(HomeAssistantView):
         raise web.HTTPFound(URL_PWA + "/index.html")
 
 
+class PwaNoCacheView(HomeAssistantView):
+    """index.html, sw.js и манифест — без кэша: иначе после обновления интеграции рамка ещё долго берёт старую
+    страницу из кэша браузера. Файлы сборки (assets/ с хэшем в имени) кэшируются как обычно."""
+
+    url = URL_PWA + r"/{name:(?:index\.html|sw\.js|manifest\.webmanifest)}"
+    name = "photoframe:pwa:nocache"
+    requires_auth = False
+
+    async def get(self, request: web.Request, name: str) -> web.StreamResponse:
+        path = FRONTEND / "pwa" / name
+        if not path.is_file():
+            raise web.HTTPNotFound
+        return web.FileResponse(path, headers={"Cache-Control": "no-cache"})
+
+
 async def _async_register_frontend(hass: HomeAssistant) -> None:
     """Раздать PWA и карточку и подключить карточку ко всем дашбордам.
 
@@ -106,8 +121,10 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
     card = FRONTEND / "photoframe-card.js"
     paths = []
     if pwa.is_dir():
-        paths.append(StaticPathConfig(URL_PWA, str(pwa), cache_headers=False))
+        # Свои адреса регистрируются раньше раздачи каталога — поэтому срабатывают первыми.
         hass.http.register_view(PwaRedirectView())
+        hass.http.register_view(PwaNoCacheView())
+        paths.append(StaticPathConfig(URL_PWA, str(pwa), cache_headers=False))
     if card.is_file():
         paths.append(StaticPathConfig(URL_CARD, str(card), cache_headers=False))
     if not paths:
