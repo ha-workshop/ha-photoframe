@@ -41,6 +41,8 @@
 ## Установка
 
 1. HACS → ⋮ → «Пользовательские репозитории» → `https://github.com/ha-workshop/ha-photoframe`, категория **Integration**.
+
+   [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ha-workshop&repository=ha-photoframe&category=Integration)
 2. Установите **Photo Frame** и перезапустите Home Assistant.
 3. «Настройки → Устройства и службы → Добавить интеграцию → Photo Frame».
 4. Добавьте карточку **Photo Frame** на дашборд (лучше в вид «Панель») или откройте `/photoframe/` на устройстве.
