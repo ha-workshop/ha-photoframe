@@ -1,14 +1,7 @@
 {
-  "domain": "photoframe",
   "name": "Photo Frame",
-  "codeowners": [],
-  "config_flow": true,
-  "documentation": "https://github.com/your-repo/ha-photoframe",
-  "issue_tracker": "https://github.com/your-repo/ha-photoframe/issues",
-  "iot_class": "local_polling",
-  "version": "0.2.1",
-  "categories": [
-    "image"
-  ],
-  "homeassistant": "2025.1.0"
+  "homeassistant": "2025.1.0",
+  "render_readme": true,
+  "zip_release": true,
+  "filename": "photoframe.zip"
 }
