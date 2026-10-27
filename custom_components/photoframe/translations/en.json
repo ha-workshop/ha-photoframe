@@ -1,0 +1,48 @@
+{
+  "config": {
+    "step": {
+      "user": {
+        "title": "Photo Frame",
+        "description": "A photo frame that also runs your home. Interface: the “Photo Frame” dashboard card and the app at /photoframe/.",
+        "data": {
+          "media_folder": "Photo folder in the media library",
+          "kiosk": "Kiosk mode by default",
+          "edit": "Who can change homes and screens"
+        },
+        "data_description": {
+          "media_folder": "A subfolder of /media, e.g. photoframe → /media/photoframe",
+          "kiosk": "Hide the HA header and sidebar while the frame is on screen (can be overridden per device)",
+          "edit": "Photos, clock and start screen are set on each device"
+        }
+      }
+    },
+    "abort": {
+      "already_configured": "Photo Frame is already set up"
+    }
+  },
+  "options": {
+    "step": {
+      "init": {
+        "title": "Photo Frame",
+        "data": {
+          "media_folder": "Photo folder in the media library",
+          "kiosk": "Kiosk mode by default",
+          "edit": "Who can change homes and screens"
+        },
+        "data_description": {
+          "media_folder": "A subfolder of /media, e.g. photoframe → /media/photoframe",
+          "kiosk": "Hide the HA header and sidebar while the frame is on screen (can be overridden per device)",
+          "edit": "Photos, clock and start screen are set on each device"
+        }
+      }
+    }
+  },
+  "selector": {
+    "edit": {
+      "options": {
+        "admins": "Administrators only",
+        "users": "All HA users"
+      }
+    }
+  }
+}
