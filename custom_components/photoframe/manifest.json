@@ -1,9 +1,6 @@
 {
   "domain": "photoframe",
   "name": "Photo Frame",
-  "categories": [
-    "productivity_information.documents_photos"
-  ],
   "codeowners": [
     "@ha-workshop/maintainers"
   ],
