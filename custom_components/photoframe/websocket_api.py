@@ -109,6 +109,7 @@ async def ws_save(hass: HomeAssistant, connection: websocket_api.ActiveConnectio
         vol.Optional("name"): str,
         vol.Optional("model"): str,
         vol.Optional("version"): str,
+        vol.Optional("apk"): str,
     }
 )
 @callback
@@ -124,7 +125,7 @@ def ws_frame_connect(hass: HomeAssistant, connection: websocket_api.ActiveConnec
     def send(data: dict[str, Any]) -> None:
         connection.send_message(websocket_api.event_message(msg["id"], data))
 
-    info = {key: msg[key] for key in ("name", "model", "version") if key in msg}
+    info = {key: msg[key] for key in ("name", "model", "version", "apk") if key in msg}
     connection.subscriptions[msg["id"]] = store.frames.async_connect(msg["frame_id"], info, send)
     connection.send_result(msg["id"])
 

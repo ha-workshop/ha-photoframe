@@ -117,6 +117,10 @@ class FrameManager:
         name = info.get("name") or frame.get("name") or f"Photo Frame {frame_id[:4]}"
         frame["name"] = frame.get("name") or name
         frame["model"] = info.get("model") or frame.get("model")
+        # Версия APK-оболочки (только у Android-рамок) — для обновления APK из HA.
+        if info.get("apk"):
+            frame["apk"] = info["apk"]
+            self.live.setdefault(frame_id, {}).pop("updating", None)
         self.hass.async_create_task(self.store.async_save_data())
 
         device = dr.async_get(self.hass).async_get_or_create(

@@ -36,6 +36,8 @@ Each frame that opens the app (APK, browser, *Add to Home Screen*) shows up in *
 - **Screen** — a light: off puts the frame to sleep (black screen, slideshow paused; a touch wakes it),
   brightness dims it (real backlight in the APK, a dark overlay in a browser). Turn it off at night
   and on from a motion sensor with an ordinary automation;
+- **Frame app** (Android frames with the APK) — an update when the integration serves a newer APK; *Install*
+  makes the frame download and install it (silently with root, otherwise tap *Install* on the frame);
 - buttons **Next photo**, **Open panel**, **Back to photos**, **Reload**.
 
 Services for automations (pick frames as devices; none — all online frames):
