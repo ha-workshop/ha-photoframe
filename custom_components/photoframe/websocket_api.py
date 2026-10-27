@@ -18,6 +18,8 @@ def async_setup(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_config)
     websocket_api.async_register_command(hass, ws_subscribe)
     websocket_api.async_register_command(hass, ws_save)
+    websocket_api.async_register_command(hass, ws_frame_connect)
+    websocket_api.async_register_command(hass, ws_frame_report)
 
 
 def _entry(hass: HomeAssistant) -> ConfigEntry | None:
@@ -96,3 +98,53 @@ async def ws_save(hass: HomeAssistant, connection: websocket_api.ActiveConnectio
     store: FrameStore = entry.runtime_data
     await store.async_update({key: msg[key] for key in KEYS if key in msg})
     connection.send_result(msg["id"])
+
+
+# ── Рамки как устройства ──────────────────────────────────
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "photoframe/frame/connect",
+        vol.Required("frame_id"): vol.All(str, vol.Length(min=8, max=64)),
+        vol.Optional("name"): str,
+        vol.Optional("model"): str,
+        vol.Optional("version"): str,
+    }
+)
+@callback
+def ws_frame_connect(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """Рамка на связи: пока подписка открыта — «в сети». Сюда же ей приходят её настройки и команды."""
+    entry = _entry(hass)
+    if entry is None:
+        _not_loaded(connection, msg["id"])
+        return
+    store: FrameStore = entry.runtime_data
+
+    @callback
+    def send(data: dict[str, Any]) -> None:
+        connection.send_message(websocket_api.event_message(msg["id"], data))
+
+    info = {key: msg[key] for key in ("name", "model", "version") if key in msg}
+    connection.subscriptions[msg["id"]] = store.frames.async_connect(msg["frame_id"], info, send)
+    connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "photoframe/frame/report",
+        vol.Required("frame_id"): str,
+        vol.Optional("photo"): vol.Any(str, None),
+        vol.Optional("photo_url"): vol.Any(str, None),
+        vol.Optional("screen"): vol.Any(str, None),
+    }
+)
+@callback
+def ws_frame_report(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """Рамка сообщает, что сейчас показывает: фото, экран."""
+    entry = _entry(hass)
+    if entry is None:
+        _not_loaded(connection, msg["id"])
+        return
+    store: FrameStore = entry.runtime_data
+    store.frames.async_report(msg["frame_id"], {k: msg[k] for k in ("photo", "photo_url", "screen") if k in msg})
+    connection.send_result(msg["id"])
+

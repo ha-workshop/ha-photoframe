@@ -6,8 +6,13 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from typing import TYPE_CHECKING
+
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.storage import Store
+
+if TYPE_CHECKING:
+    from .frames import FrameManager
 
 from .const import CARD_TYPE, SETUP_DASHBOARD, STORAGE_KEY, STORAGE_VERSION
 
@@ -46,6 +51,8 @@ class FrameStore:
         self._store: Store[dict[str, Any]] = Store(hass, STORAGE_VERSION, STORAGE_KEY)
         self.data: dict[str, Any] = {}
         self._listeners: list[Callable[[], None]] = []
+        # Рамки как устройства — заводит async_setup_entry.
+        self.frames: FrameManager
 
     async def async_load(self) -> None:
         data = await self._store.async_load()
@@ -61,6 +68,10 @@ class FrameStore:
                 self.data[key] = patch[key]
         await self._store.async_save(self.data)
         self.async_notify()
+
+    async def async_save_data(self) -> None:
+        """Сохранить без рассылки конфига — для реестра рамок (рамкам он не нужен)."""
+        await self._store.async_save(self.data)
 
     @callback
     def async_notify(self) -> None:

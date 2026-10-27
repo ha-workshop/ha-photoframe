@@ -16,11 +16,13 @@ from homeassistant.components.http import HomeAssistantView, StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
 
-from . import websocket_api
-from .const import CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER, DOMAIN, URL_CARD, URL_PWA
+from . import services, websocket_api
+from .const import CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER, DOMAIN, PLATFORMS, URL_CARD, URL_PWA
+from .frames import FrameManager
 from .store import FrameStore, async_ensure_media_folder
 
 _LOGGER = logging.getLogger(__name__)
@@ -35,6 +37,7 @@ type PhotoFrameConfigEntry = ConfigEntry[FrameStore]
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     websocket_api.async_setup(hass)
+    services.async_setup(hass)
     return True
 
 
@@ -43,18 +46,32 @@ async def async_setup_entry(hass: HomeAssistant, entry: PhotoFrameConfigEntry) -
     await store.async_load()
     entry.runtime_data = store
     await async_ensure_media_folder(hass, entry.options.get(CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER))
+    store.frames = FrameManager(hass, entry, store)
+    await store.frames.async_start()
+    await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await _async_register_frontend(hass)
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: PhotoFrameConfigEntry) -> bool:
-    # Раздачу файлов в HA отменить нельзя — она остаётся до перезапуска; данные выгружать незачем.
+    # Раздачу файлов в HA отменить нельзя — она остаётся до перезапуска.
+    return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+async def async_remove_config_entry_device(
+    hass: HomeAssistant, entry: PhotoFrameConfigEntry, device: dr.DeviceEntry
+) -> bool:
+    """Рамку удалили в «Устройствах» — забываем её (подключится снова — появится заново)."""
+    for domain, frame_id in device.identifiers:
+        if domain == DOMAIN:
+            await entry.runtime_data.frames.async_remove(frame_id)
     return True
 
 
 async def _async_options_updated(hass: HomeAssistant, entry: PhotoFrameConfigEntry) -> None:
     await async_ensure_media_folder(hass, entry.options.get(CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER))
+    await entry.runtime_data.frames.async_refresh_albums()
     entry.runtime_data.async_notify()
 
 
