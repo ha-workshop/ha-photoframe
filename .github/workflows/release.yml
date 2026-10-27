@@ -1,5 +1,8 @@
 # При публикации релиза: версия из тега → manifest.json, интерфейс из подмодуля frontend/ → в интеграцию,
 # всё вместе — photoframe.zip к релизу. HACS (zip_release) ставит именно его.
+# APK рамки собирается тут же (Android SDK есть на раннере) и подписывается ключом из секрета
+# ANDROID_KEYSTORE (base64 keystore) — тем же, что у установленных рамок, иначе обновить поверх нельзя.
+# Он внутри интеграции (HA раздаёт /photoframe/photoframe.apk) и отдельным файлом у релиза.
 name: Release
 
 on:
@@ -26,7 +29,20 @@ jobs:
           VERSION="${GITHUB_REF_NAME#v}"
           jq --arg v "$VERSION" '.version = $v' custom_components/photoframe/manifest.json > manifest.tmp
           mv manifest.tmp custom_components/photoframe/manifest.json
+      - name: Signing key
+        env:
+          ANDROID_KEYSTORE: ${{ secrets.ANDROID_KEYSTORE }}
+        run: |
+          if [ -z "$ANDROID_KEYSTORE" ]; then
+            echo "::error::Нет секрета ANDROID_KEYSTORE — APK нечем подписать"
+            exit 1
+          fi
+          echo "$ANDROID_KEYSTORE" | base64 -d > "$RUNNER_TEMP/frame.keystore"
+          echo "KEYSTORE=$RUNNER_TEMP/frame.keystore" >> "$GITHUB_ENV"
       - run: scripts/build-frontend.sh zip
+      - run: cp custom_components/photoframe/frontend/pwa/photoframe.apk photoframe.apk
       - uses: softprops/action-gh-release@v2
         with:
-          files: photoframe.zip
+          files: |
+            photoframe.zip
+            photoframe.apk
