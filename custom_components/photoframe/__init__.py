@@ -108,6 +108,17 @@ async def _card_installed_separately(hass: HomeAssistant) -> bool:
         if hasattr(resources, "loaded") and not resources.loaded:
             await resources.async_load()
             resources.loaded = True
-        return any("photoframe-card.js" in str(item.get("url", "")) for item in resources.async_items())
+        urls = [str(item.get("url", "")) for item in resources.async_items()]
     except Exception:  # noqa: BLE001 — ресурсы в YAML или внутреннее API поменялось
         return False
+    return any(_card_file_exists(hass, url) for url in urls if "photoframe-card.js" in url)
+
+
+def _card_file_exists(hass: HomeAssistant, url: str) -> bool:
+    """Ресурс из HACS (/hacsfiles/…) после удаления карточки иногда остаётся — без файла он не в счёт."""
+    path = url.split("?")[0]
+    if path.startswith("/hacsfiles/"):
+        return Path(hass.config.path("www", "community", path[len("/hacsfiles/"):])).is_file()
+    if path.startswith("/local/"):
+        return Path(hass.config.path("www", path[len("/local/"):])).is_file()
+    return True
