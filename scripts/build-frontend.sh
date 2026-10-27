@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Собрать интерфейс из подмодуля frontend/ (mZer0ne/lovelace-photoframe) в интеграцию:
+# Собрать интерфейс из подмодуля frontend/ (ha-workshop/lovelace-photoframe) в интеграцию:
 #   custom_components/photoframe/frontend/photoframe-card.js  — карточка для дашбордов
 #   custom_components/photoframe/frontend/pwa/                — приложение по адресу /photoframe/
 #

@@ -1,4 +1,4 @@
-<p align="center"><img src="https://raw.githubusercontent.com/mZer0ne/ha-photoframe/main/docs/icon.png" width="128" height="128" alt="Photo Frame"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/ha-workshop/ha-photoframe/main/docs/icon.png" width="128" height="128" alt="Photo Frame"></p>
 
 # Photo Frame — интеграция для Home Assistant
 
@@ -13,7 +13,7 @@
 - **Карточка дашборда** `custom:photoframe-card` — доступна на всех дашбордах сразу после установки,
   ресурс добавлять не нужно.
 - **Отдельное приложение** по адресу `http://<ваш HA>/photoframe/` — для браузера, «на экран Домой» и старых
-  Android-рамок (APK-оболочка — в [lovelace-photoframe](https://github.com/mZer0ne/lovelace-photoframe)).
+  Android-рамок (APK-оболочка — в [lovelace-photoframe](https://github.com/ha-workshop/lovelace-photoframe)).
   Вход — через обычную страницу входа Home Assistant.
 - **Общая конфигурация** для карточки и всех рамок: дома, их экраны и карточки, настройки слайдшоу —
   хранятся в Home Assistant (`.storage/photoframe`), правка сразу видна на всех рамках.
@@ -22,11 +22,11 @@
   режим киоска по умолчанию, кто может менять дома и экраны (администраторы или все пользователи).
 
 Сам интерфейс — экран с фото как на iPhone, экраны у домов, отдельная раскладка для телефона, графики —
-описан в [lovelace-photoframe](https://github.com/mZer0ne/lovelace-photoframe).
+описан в [lovelace-photoframe](https://github.com/ha-workshop/lovelace-photoframe).
 
 ## Установка
 
-1. HACS → ⋮ → «Пользовательские репозитории» → `https://github.com/mZer0ne/ha-photoframe`, категория **Integration**.
+1. HACS → ⋮ → «Пользовательские репозитории» → `https://github.com/ha-workshop/ha-photoframe`, категория **Integration**.
 2. Установите **Photo Frame** и перезапустите Home Assistant.
 3. «Настройки → Устройства и службы → Добавить интеграцию → Photo Frame».
 4. Добавьте карточку **Photo Frame** на дашборд (лучше в вид «Панель») или откройте `/photoframe/` на устройстве.
@@ -37,11 +37,11 @@
 
 ## Разработка
 
-Интерфейс — подмодуль [lovelace-photoframe](https://github.com/mZer0ne/lovelace-photoframe) в `frontend/`;
+Интерфейс — подмодуль [lovelace-photoframe](https://github.com/ha-workshop/lovelace-photoframe) в `frontend/`;
 релиз собирает его в интеграцию (`photoframe.zip`).
 
 ```bash
-git clone --recursive https://github.com/mZer0ne/ha-photoframe
+git clone --recursive https://github.com/ha-workshop/ha-photoframe
 scripts/build-frontend.sh      # интерфейс → custom_components/photoframe/frontend
 dev/run.sh                     # тестовый Home Assistant в Docker: http://localhost:8125
 ```
