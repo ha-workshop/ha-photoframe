@@ -49,7 +49,9 @@ layout, charts — is described in [lovelace-photoframe](https://github.com/ha-w
 
 ## Install
 
-1. HACS → ⋮ → *Custom repositories* → `https://github.com/ha-workshop/ha-photoframe`, category **Integration**.
+1. HACS → ⋮ → **Custom repositories** → `https://github.com/ha-workshop/ha-photoframe`, category **Integration**.
+
+   [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ha-workshop&repository=ha-photoframe&category=Integration)
 2. Install **Photo Frame**, restart Home Assistant.
 3. *Settings → Devices & services → Add integration → Photo Frame*.
 4. Add the **Photo Frame** card to a dashboard (a *Panel* view works best) or open `/photoframe/` on a device.
