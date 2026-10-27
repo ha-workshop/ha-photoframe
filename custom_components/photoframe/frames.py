@@ -86,8 +86,8 @@ class FrameManager:
             albums = await self.hass.async_add_executor_job(scan)
         if albums != self.albums:
             self.albums = albums
-            for frame_id in self.frames:
-                async_dispatcher_send(self.hass, SIGNAL_FRAME_UPDATED.format(frame_id))
+            # Рамкам — новый список альбомов (выбор при загрузке), сущностям — новые варианты.
+            self.store.async_notify()
 
     # ── Экраны: «Дом · Экран» для выбора стартового экрана рамки ──
     def screen_options(self) -> dict[str, str]:

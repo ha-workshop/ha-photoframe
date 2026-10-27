@@ -41,6 +41,7 @@ def _payload(hass: HomeAssistant, entry: ConfigEntry, user: Any) -> dict[str, An
         # Как называется источник «Моих медиа» (обычно local) — для media-source://media_source/<он>/<папка>.
         "media_source": media_source_dir(hass),
         "kiosk": entry.options.get(CONF_KIOSK, False),
+        "albums": list(store.frames.albums) if hasattr(store, "frames") else [],
         "can_edit": _can_edit(entry, user),
     }
 
