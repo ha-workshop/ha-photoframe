@@ -1,0 +1,8 @@
+__pycache__/
+*.pyc
+# Тестовый HA в Docker
+dev/config/
+.DS_Store
+custom_components/photoframe/frontend/
+dev/.test-user
+photoframe.zip
