@@ -20,7 +20,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
 
-from . import services, websocket_api
+from . import photos, services, websocket_api
 from .const import CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER, DOMAIN, PLATFORMS, URL_CARD, URL_PWA
 from .frames import FrameManager
 from .store import FrameStore, async_ensure_media_folder
@@ -38,6 +38,7 @@ type PhotoFrameConfigEntry = ConfigEntry[FrameStore]
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     websocket_api.async_setup(hass)
     services.async_setup(hass)
+    photos.async_setup(hass)
     return True
 
 

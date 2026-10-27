@@ -1,13 +1,22 @@
 {
   "domain": "photoframe",
   "name": "Photo Frame",
-  "codeowners": ["@ha-workshop/maintainers"],
+  "codeowners": [
+    "@ha-workshop/maintainers"
+  ],
   "config_flow": true,
-  "dependencies": ["http", "frontend", "websocket_api", "lovelace"],
+  "dependencies": [
+    "http",
+    "frontend",
+    "websocket_api",
+    "lovelace"
+  ],
   "documentation": "https://github.com/ha-workshop/ha-photoframe",
   "integration_type": "service",
   "iot_class": "local_push",
   "issue_tracker": "https://github.com/ha-workshop/ha-photoframe/issues",
-  "requirements": [],
+  "requirements": [
+    "pillow-heif==1.8.1"
+  ],
   "version": "0.1.0"
 }
