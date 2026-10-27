@@ -20,8 +20,8 @@ from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
 
 from . import websocket_api
-from .const import DOMAIN, URL_CARD, URL_PWA
-from .store import FrameStore
+from .const import CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER, DOMAIN, URL_CARD, URL_PWA
+from .store import FrameStore, async_ensure_media_folder
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -42,6 +42,7 @@ async def async_setup_entry(hass: HomeAssistant, entry: PhotoFrameConfigEntry) -
     store = FrameStore(hass)
     await store.async_load()
     entry.runtime_data = store
+    await async_ensure_media_folder(hass, entry.options.get(CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER))
     await _async_register_frontend(hass)
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     return True
@@ -53,6 +54,7 @@ async def async_unload_entry(hass: HomeAssistant, entry: PhotoFrameConfigEntry) 
 
 
 async def _async_options_updated(hass: HomeAssistant, entry: PhotoFrameConfigEntry) -> None:
+    await async_ensure_media_folder(hass, entry.options.get(CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER))
     entry.runtime_data.async_notify()
 
 
