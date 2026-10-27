@@ -1,4 +1,4 @@
-<p align="center"><img src="https://raw.githubusercontent.com/mZer0ne/ha-photoframe/main/docs/icon.png" width="128" height="128" alt="Photo Frame"></p>
+<p align="center"><img src="https://raw.githubusercontent.com/ha-workshop/ha-photoframe/main/docs/icon.png" width="128" height="128" alt="Photo Frame"></p>
 
 # Photo Frame — integration for Home Assistant
 
@@ -9,7 +9,7 @@ a big clock and the weather; swipe up for lights, climate, cameras, speakers and
 everything with it — no separate dashboard card, no add-ons, no long-lived tokens.
 
 [![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories)
-[![Release](https://img.shields.io/github/v/release/mZer0ne/ha-photoframe)](https://github.com/mZer0ne/ha-photoframe/releases)
+[![Release](https://img.shields.io/github/v/release/ha-workshop/ha-photoframe)](https://github.com/ha-workshop/ha-photoframe/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 ## What you get
@@ -17,7 +17,7 @@ everything with it — no separate dashboard card, no add-ons, no long-lived tok
 - **The dashboard card** `custom:photoframe-card` — available on every dashboard right after install,
   no resource to add.
 - **The standalone app** at `http://<your HA>/photoframe/` — for browsers, *Add to Home Screen* and old
-  Android frames (an APK shell lives in [lovelace-photoframe](https://github.com/mZer0ne/lovelace-photoframe)).
+  Android frames (an APK shell lives in [lovelace-photoframe](https://github.com/ha-workshop/lovelace-photoframe)).
   It signs in through Home Assistant's own login page.
 - **One shared configuration** for the card and every frame: homes, their screens and cards, slideshow
   settings — stored in Home Assistant (`.storage/photoframe`), changes show up on all frames at once.
@@ -26,11 +26,11 @@ everything with it — no separate dashboard card, no add-ons, no long-lived tok
   kiosk mode by default, who may change homes and screens (admins or all users).
 
 The interface itself — photo screen like the iPhone lock screen, screens per home, a separate phone
-layout, charts — is described in [lovelace-photoframe](https://github.com/mZer0ne/lovelace-photoframe).
+layout, charts — is described in [lovelace-photoframe](https://github.com/ha-workshop/lovelace-photoframe).
 
 ## Install
 
-1. HACS → ⋮ → *Custom repositories* → `https://github.com/mZer0ne/ha-photoframe`, category **Integration**.
+1. HACS → ⋮ → *Custom repositories* → `https://github.com/ha-workshop/ha-photoframe`, category **Integration**.
 2. Install **Photo Frame**, restart Home Assistant.
 3. *Settings → Devices & services → Add integration → Photo Frame*.
 4. Add the **Photo Frame** card to a dashboard (a *Panel* view works best) or open `/photoframe/` on a device.
@@ -41,11 +41,11 @@ installed — the integration notices it and doesn't load a second copy — or r
 
 ## Development
 
-The interface is the [lovelace-photoframe](https://github.com/mZer0ne/lovelace-photoframe) submodule in
+The interface is the [lovelace-photoframe](https://github.com/ha-workshop/lovelace-photoframe) submodule in
 `frontend/`; a release builds it into the integration (`photoframe.zip`).
 
 ```bash
-git clone --recursive https://github.com/mZer0ne/ha-photoframe
+git clone --recursive https://github.com/ha-workshop/ha-photoframe
 scripts/build-frontend.sh      # interface → custom_components/photoframe/frontend
 dev/run.sh                     # test Home Assistant in Docker: http://localhost:8125
 ```

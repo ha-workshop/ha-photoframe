@@ -27,7 +27,7 @@ _LOGGER = logging.getLogger(__name__)
 
 CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
-# Собранный интерфейс (CI кладёт сюда сборку из mZer0ne/lovelace-photoframe).
+# Собранный интерфейс (CI кладёт сюда сборку из ha-workshop/lovelace-photoframe).
 FRONTEND = Path(__file__).parent / "frontend"
 
 type PhotoFrameConfigEntry = ConfigEntry[FrameStore]
