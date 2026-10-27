@@ -85,6 +85,11 @@
       "screen": {
         "name": "Screen"
       }
+    },
+    "update": {
+      "apk": {
+        "name": "Frame app"
+      }
     }
   },
   "services": {
