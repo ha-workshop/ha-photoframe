@@ -75,6 +75,8 @@ dev/run.sh                     # test Home Assistant in Docker: http://localhost
 
 `FRONTEND=../lovelace-photoframe scripts/build-frontend.sh` builds from a working copy instead of the submodule.
 
+Releasing (signing key for the APK, release steps, common CI failures): [RELEASING.md](RELEASING.md).
+
 ## License
 
 MIT
