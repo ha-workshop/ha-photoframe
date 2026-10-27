@@ -10,7 +10,7 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 
 from .const import CONF_EDIT, CONF_KIOSK, CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER, DOMAIN, EDIT_ADMINS
-from .store import KEYS, FrameStore
+from .store import KEYS, FrameStore, media_source_dir
 
 
 @callback
@@ -29,13 +29,15 @@ def _can_edit(entry: ConfigEntry, user: Any) -> bool:
     return bool(user and (user.is_admin or entry.options.get(CONF_EDIT, EDIT_ADMINS) != EDIT_ADMINS))
 
 
-def _payload(entry: ConfigEntry, user: Any) -> dict[str, Any]:
+def _payload(hass: HomeAssistant, entry: ConfigEntry, user: Any) -> dict[str, Any]:
     """Конфиг для рамки: данные хранилища + настройки интеграции + может ли этот пользователь править."""
     store: FrameStore = entry.runtime_data
     data = {key: store.data[key] for key in KEYS if key in store.data}
     return {
         **data,
         "media_folder": entry.options.get(CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER),
+        # Как называется источник «Моих медиа» (обычно local) — для media-source://media_source/<он>/<папка>.
+        "media_source": media_source_dir(hass),
         "kiosk": entry.options.get(CONF_KIOSK, False),
         "can_edit": _can_edit(entry, user),
     }
@@ -52,7 +54,7 @@ def ws_config(hass: HomeAssistant, connection: websocket_api.ActiveConnection, m
     if entry is None:
         _not_loaded(connection, msg["id"])
         return
-    connection.send_result(msg["id"], _payload(entry, connection.user))
+    connection.send_result(msg["id"], _payload(hass, entry, connection.user))
 
 
 @websocket_api.websocket_command({vol.Required("type"): "photoframe/config/subscribe"})
@@ -67,7 +69,7 @@ def ws_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnection
 
     @callback
     def changed() -> None:
-        connection.send_message(websocket_api.event_message(msg["id"], _payload(entry, connection.user)))
+        connection.send_message(websocket_api.event_message(msg["id"], _payload(hass, entry, connection.user)))
 
     connection.subscriptions[msg["id"]] = store.async_listen(changed)
     connection.send_result(msg["id"])

@@ -3,12 +3,34 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
+from pathlib import Path
 from typing import Any
 
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.storage import Store
 
 from .const import CARD_TYPE, SETUP_DASHBOARD, STORAGE_KEY, STORAGE_VERSION
+
+
+def media_source_dir(hass: HomeAssistant) -> str | None:
+    """Источник «Моих медиа», куда класть фото: обычно local (= /media), но в configuration.yaml
+    media_dirs можно назвать иначе (например, media: /media) — тогда берём первый."""
+    dirs = hass.config.media_dirs
+    if "local" in dirs:
+        return "local"
+    return next(iter(dirs), None)
+
+
+async def async_ensure_media_folder(hass: HomeAssistant, folder: str) -> None:
+    """Создать папку фото в медиатеке, если её нет: загружать фото в несуществующую папку HA не даёт."""
+    source = media_source_dir(hass)
+    if source is None or not folder:
+        return
+    path = Path(hass.config.media_dirs[source]) / folder.strip("/")
+    try:
+        await hass.async_add_executor_job(lambda: path.mkdir(parents=True, exist_ok=True))
+    except OSError as err:
+        _LOGGER.warning("Photo Frame: не удалось создать папку фото %s: %s", path, err)
 
 _LOGGER = logging.getLogger(__name__)
 
