@@ -152,6 +152,9 @@ class FrameManager:
             "name": frame.get("name"),
             "album": frame.get("album") or ALBUM_ALL,
             "start_screen": frame.get("start_screen"),
+            # Экран: включён ли (иначе спит — чёрный) и яркость в процентах.
+            "screen_on": frame.get("screen_on", True),
+            "brightness": frame.get("brightness", 100),
         }
 
     @callback

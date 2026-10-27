@@ -1,0 +1,12 @@
+{
+  "entity": {
+    "light": {
+      "screen": {
+        "default": "mdi:monitor",
+        "state": {
+          "off": "mdi:monitor-off"
+        }
+      }
+    }
+  }
+}

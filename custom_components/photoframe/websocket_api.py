@@ -136,16 +136,20 @@ def ws_frame_connect(hass: HomeAssistant, connection: websocket_api.ActiveConnec
         vol.Optional("photo"): vol.Any(str, None),
         vol.Optional("photo_url"): vol.Any(str, None),
         vol.Optional("screen"): vol.Any(str, None),
+        vol.Optional("screen_on"): bool,
     }
 )
 @callback
 def ws_frame_report(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
-    """Рамка сообщает, что сейчас показывает: фото, экран."""
+    """Рамка сообщает, что сейчас показывает: фото, экран; проснулась ли от касания."""
     entry = _entry(hass)
     if entry is None:
         _not_loaded(connection, msg["id"])
         return
     store: FrameStore = entry.runtime_data
     store.frames.async_report(msg["frame_id"], {k: msg[k] for k in ("photo", "photo_url", "screen") if k in msg})
+    if "screen_on" in msg:
+        # Разбудили касанием (или уснула сама) — это настройка рамки, её помнит HA.
+        hass.async_create_task(store.frames.async_set(msg["frame_id"], screen_on=msg["screen_on"]))
     connection.send_result(msg["id"])
 
