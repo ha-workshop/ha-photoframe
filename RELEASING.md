@@ -75,7 +75,11 @@ gh release delete v0.2.2 --cleanup-tag --yes
 - **hassfest** — лишние поля в `manifest.json` (например, `categories` у сторонней интеграции не принимается).
 - **HACS** — `hacs.json` должен оставаться таким: `name`, `homeassistant`, `render_readme`,
   `zip_release: true`, `filename: photoframe.zip`. Без `zip_release` HACS поставит исходники без интерфейса и APK.
-  Предупреждение HACS про `categories` — только подсказка, его не исправить без ошибки hassfest.
+  Предупреждение HACS про `categories` — только подсказка. Поле `categories` в `manifest.json` появилось в ветке
+  разработки HA 18.10.2026; вышедший hassfest (HA 2026.10) его ещё не принимает. Когда выйдет HA 2026.11 и
+  проверка hassfest начнёт его понимать, добавить в `manifest.json` после `"name"`:
+  `"categories": ["productivity_information.documents_photos"]` и проверить локально:
+  `docker run --rm -v "$PWD":/github/workspace ghcr.io/home-assistant/hassfest`.
 
 ## Публикация в магазине HACS (один раз)
 
