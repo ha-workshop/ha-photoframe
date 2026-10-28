@@ -5,6 +5,7 @@
 """
 from __future__ import annotations
 
+import copy
 import logging
 from collections.abc import Callable
 from datetime import timedelta
@@ -159,6 +160,10 @@ class FrameManager:
             # Экран: включён ли (иначе спит — чёрный) и яркость в процентах.
             "screen_on": frame.get("screen_on", True),
             "brightness": frame.get("brightness", 100),
+            # Сетки из редактора в HA — только если их там задавали (иначе рамка живёт своими).
+            "layout": {"rev": frame["layout_rev"], "grid": frame.get("grid"), "grid_portrait": frame.get("grid_portrait")}
+            if frame.get("layout_rev")
+            else None,
         }
 
     @callback
@@ -168,13 +173,36 @@ class FrameManager:
         async_dispatcher_send(self.hass, SIGNAL_FRAME_UPDATED.format(frame_id))
 
     @callback
-    def async_set_grid(self, frame_id: str, grid: dict[str, Any] | None) -> None:
-        """Рамка сообщила свою сетку экрана с фото — помним её (другие рамки могут её взять)."""
+    def async_set_layout(self, frame_id: str, data: dict[str, Any]) -> None:
+        """Рамка сообщила сетки экрана с фото (обе ориентации) и размер экрана — помним: другая рамка может
+        взять сетку, редактор в HA показывает экран рамки в её пропорциях (для каждой ориентации свой размер)."""
         frame = self.frames.get(frame_id)
-        if frame is None or frame.get("grid") == grid:
+        if frame is None:
+            return
+        before = copy.deepcopy(frame)
+        for key in ("grid", "grid_portrait"):
+            if key in data:
+                frame[key] = data[key]
+        display = data.get("display")
+        if display and display.get("w") and display.get("h"):
+            orientation = "portrait" if display["h"] > display["w"] else "landscape"
+            frame.setdefault("displays", {})[orientation] = {"w": int(display["w"]), "h": int(display["h"])}
+        if frame != before:
+            self.hass.async_create_task(self.store.async_save_data())
+
+    async def async_push_layout(self, frame_id: str, grid: dict[str, Any] | None, grid_portrait: dict[str, Any] | None) -> None:
+        """Сетки заданы в HA (редактор «Фоторамки»): номер правки растёт — рамка возьмёт их, даже если у неё
+        были свои, и не возьмёт старые повторно после переподключения."""
+        frame = self.frames.get(frame_id)
+        if frame is None:
             return
         frame["grid"] = grid
-        self.hass.async_create_task(self.store.async_save_data())
+        frame["grid_portrait"] = grid_portrait
+        frame["layout_rev"] = int(frame.get("layout_rev", 0)) + 1
+        await self.store.async_save_data()
+        send = self.online.get(frame_id)
+        if send:
+            send(self.state_message(frame_id))
 
     # ── Настройки рамки из HA ─────────────────────────────
     async def async_set(self, frame_id: str, **patch: Any) -> None:

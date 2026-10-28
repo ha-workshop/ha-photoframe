@@ -9,7 +9,8 @@
     "http",
     "frontend",
     "websocket_api",
-    "lovelace"
+    "lovelace",
+    "panel_custom"
   ],
   "documentation": "https://github.com/ha-workshop/ha-photoframe",
   "integration_type": "service",

@@ -11,6 +11,7 @@ from pathlib import Path
 
 from aiohttp import web
 
+from homeassistant.components import frontend, panel_custom
 from homeassistant.components.frontend import add_extra_js_url
 from homeassistant.components.http import HomeAssistantView, StaticPathConfig
 from homeassistant.config_entries import ConfigEntry
@@ -51,13 +52,36 @@ async def async_setup_entry(hass: HomeAssistant, entry: PhotoFrameConfigEntry) -
     await store.frames.async_start()
     await hass.config_entries.async_forward_entry_setups(entry, PLATFORMS)
     await _async_register_frontend(hass)
+    await _async_register_panel(hass)
     entry.async_on_unload(entry.add_update_listener(_async_options_updated))
     return True
 
 
 async def async_unload_entry(hass: HomeAssistant, entry: PhotoFrameConfigEntry) -> bool:
-    # Раздачу файлов в HA отменить нельзя — она остаётся до перезапуска.
+    # Раздачу файлов в HA отменить нельзя — она остаётся до перезапуска; раздел в меню убираем.
+    frontend.async_remove_panel(hass, PANEL_URL, warn_if_unknown=False)
     return await hass.config_entries.async_unload_platforms(entry, PLATFORMS)
+
+
+PANEL_URL = "photoframe-admin"
+
+
+async def _async_register_panel(hass: HomeAssistant) -> None:
+    """Раздел «Фоторамки» в боковом меню HA — только администраторам: рамки и редактор их сеток экрана с фото.
+    Сам экран — элемент photoframe-admin из того же файла, что и карточка (его HA уже загружает)."""
+    url = hass.data.get(DOMAIN, {}).get("card_url")
+    if not url or PANEL_URL in hass.data.get("frontend_panels", {}):
+        return
+    await panel_custom.async_register_panel(
+        hass,
+        frontend_url_path=PANEL_URL,
+        webcomponent_name="photoframe-admin",
+        sidebar_title="Фоторамки" if hass.config.language == "ru" else "Photo frames",
+        sidebar_icon="mdi:image-frame",
+        module_url=url,
+        require_admin=True,
+        config={},
+    )
 
 
 async def async_remove_config_entry_device(
@@ -140,4 +164,6 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
         # В адресе — версия и время сборки: после обновления браузер не возьмёт старую карточку из кэша.
         version = (await async_get_integration(hass, DOMAIN)).version
         built = int(card.stat().st_mtime)
-        add_extra_js_url(hass, f"{URL_CARD}?v={version}-{built}")
+        url = f"{URL_CARD}?v={version}-{built}"
+        add_extra_js_url(hass, url)
+        flags["card_url"] = url
