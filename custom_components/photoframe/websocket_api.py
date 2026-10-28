@@ -20,6 +20,7 @@ def async_setup(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_save)
     websocket_api.async_register_command(hass, ws_frame_connect)
     websocket_api.async_register_command(hass, ws_frame_report)
+    websocket_api.async_register_command(hass, ws_frames)
 
 
 def _entry(hass: HomeAssistant) -> ConfigEntry | None:
@@ -138,6 +139,8 @@ def ws_frame_connect(hass: HomeAssistant, connection: websocket_api.ActiveConnec
         vol.Optional("photo_url"): vol.Any(str, None),
         vol.Optional("screen"): vol.Any(str, None),
         vol.Optional("screen_on"): bool,
+        # Сетка экрана с фото этой рамки — её можно взять на другой рамке (Настройки → Раскладка).
+        vol.Optional("grid"): vol.Any(None, dict),
     }
 )
 @callback
@@ -149,8 +152,36 @@ def ws_frame_report(hass: HomeAssistant, connection: websocket_api.ActiveConnect
         return
     store: FrameStore = entry.runtime_data
     store.frames.async_report(msg["frame_id"], {k: msg[k] for k in ("photo", "photo_url", "screen") if k in msg})
+    if "grid" in msg:
+        store.frames.async_set_grid(msg["frame_id"], msg["grid"])
     if "screen_on" in msg:
         # Разбудили касанием (или уснула сама) — это настройка рамки, её помнит HA.
         hass.async_create_task(store.frames.async_set(msg["frame_id"], screen_on=msg["screen_on"]))
     connection.send_result(msg["id"])
 
+
+
+@websocket_api.websocket_command({vol.Required("type"): "photoframe/frames"})
+@callback
+def ws_frames(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """Рамки этого HA: имя, в сети ли, сетка экрана с фото — чтобы взять раскладку другой рамки."""
+    entry = _entry(hass)
+    if entry is None:
+        _not_loaded(connection, msg["id"])
+        return
+    manager = entry.runtime_data.frames
+    connection.send_result(
+        msg["id"],
+        {
+            "frames": [
+                {
+                    "frame_id": frame_id,
+                    "name": frame.get("name"),
+                    "model": frame.get("model"),
+                    "online": frame_id in manager.online,
+                    "grid": frame.get("grid"),
+                }
+                for frame_id, frame in manager.frames.items()
+            ]
+        },
+    )

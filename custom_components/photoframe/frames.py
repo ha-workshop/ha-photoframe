@@ -167,6 +167,15 @@ class FrameManager:
         self.live.setdefault(frame_id, {}).update(data)
         async_dispatcher_send(self.hass, SIGNAL_FRAME_UPDATED.format(frame_id))
 
+    @callback
+    def async_set_grid(self, frame_id: str, grid: dict[str, Any] | None) -> None:
+        """Рамка сообщила свою сетку экрана с фото — помним её (другие рамки могут её взять)."""
+        frame = self.frames.get(frame_id)
+        if frame is None or frame.get("grid") == grid:
+            return
+        frame["grid"] = grid
+        self.hass.async_create_task(self.store.async_save_data())
+
     # ── Настройки рамки из HA ─────────────────────────────
     async def async_set(self, frame_id: str, **patch: Any) -> None:
         if frame_id not in self.frames:
