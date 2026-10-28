@@ -13,7 +13,7 @@
 - **Карточка дашборда** `custom:photoframe-card` — доступна на всех дашбордах сразу после установки,
   ресурс добавлять не нужно.
 - **Отдельное приложение** по адресу `http://<ваш HA>/photoframe/` — для браузера, «на экран Домой» и старых
-  Android-рамок (APK-оболочка — в [lovelace-photoframe](https://github.com/ha-workshop/lovelace-photoframe)).
+  Android-рамок (приложение рамки, APK, тоже раздаёт Home Assistant — см. «Android-рамка» ниже).
   Вход — через обычную страницу входа Home Assistant.
 - **Общая конфигурация** для карточки и всех рамок: дома, их экраны и карточки, настройки слайдшоу —
   хранятся в Home Assistant (`.storage/photoframe`), правка сразу видна на всех рамках.
@@ -29,6 +29,11 @@
 - **Альбом** — подпапка папки фото (`/media/photoframe/<альбом>`) или «Все фото»;
 - **Стартовый экран** — с него рамка начинает и к нему возвращается без касаний;
 - **Текущее фото** — с самим фото в картинке сущности;
+- **Экран** — как свет: выключить — рамка засыпает (чёрный экран, слайдшоу стоит; касание будит), яркость
+  затемняет (в APK — настоящая подсветка, в браузере — затемнение). Ночью выключать, по датчику движения
+  включать — обычной автоматизацией;
+- **Приложение рамки** (Android-рамки с APK) — обновление, когда интеграция раздаёт APK новее; «Установить» —
+  рамка сама скачает и поставит его (с root — без нажатий, иначе нажать «Установить» на рамке);
 - кнопки **Следующее фото**, **Открыть панель**, **Вернуться к фото**, **Перезагрузить**.
 
 Службы для автоматизаций (рамки выбираются устройствами; не выбраны — все в сети):
@@ -40,12 +45,25 @@
 
 ## Установка
 
-1. HACS → ⋮ → «Пользовательские репозитории» → `https://github.com/ha-workshop/ha-photoframe`, категория **Integration**.
+1. Откройте репозиторий в HACS:
 
-   [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ha-workshop&repository=ha-photoframe&category=Integration)
-2. Установите **Photo Frame** и перезапустите Home Assistant.
-3. «Настройки → Устройства и службы → Добавить интеграцию → Photo Frame».
+   [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ha-workshop&repository=ha-photoframe&category=integration)
+
+   Или вручную: HACS → поиск **Photo Frame**. Ещё нет в списке? HACS → ⋮ → «Пользовательские репозитории» →
+   `https://github.com/ha-workshop/ha-photoframe`, тип **Integration**.
+2. Скачайте **Photo Frame** и перезапустите Home Assistant.
+3. Добавьте интеграцию:
+
+   [![Добавить интеграцию](https://my.home-assistant.io/badges/config_flow_start.svg)](https://my.home-assistant.io/redirect/config_flow_start/?domain=photoframe)
+
+   («Настройки → Устройства и службы → Добавить интеграцию → Photo Frame».)
 4. Добавьте карточку **Photo Frame** на дашборд (лучше в вид «Панель») или откройте `/photoframe/` на устройстве.
+
+**Android-рамка** (настенный планшет, старый Android 5+): поставьте приложение рамки — Home Assistant раздаёт его
+по адресу `http://<ваш-HA>/photoframe/photoframe.apk` (оно же приложено к каждому релизу). Откройте его, укажите
+адрес Home Assistant и войдите. Фото рисует сам Android (плавно даже на слабых планшетах); приложение запускается
+при включении, держит Wi-Fi и может полностью гасить экран для сущности **Экран**. Обновили интеграцию — у рамки
+в HA появится обновление **Приложение рамки**.
 
 Уже стоит **карточка Photo Frame** из HACS (категория Dashboard)? При первом запуске интеграция перенесёт дома
 и экраны из карточки на дашборде «Фоторамка». Карточку можно оставить — интеграция это увидит и вторую копию
@@ -63,6 +81,8 @@ dev/run.sh                     # тестовый Home Assistant в Docker: http
 ```
 
 `FRONTEND=../lovelace-photoframe scripts/build-frontend.sh` — собрать из рабочей копии вместо подмодуля.
+
+Релиз (ключ подписи APK, шаги, частые ошибки CI): [RELEASING.md](RELEASING.md).
 
 ## Лицензия
 

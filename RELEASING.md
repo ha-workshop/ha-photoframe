@@ -76,3 +76,64 @@ gh release delete v0.2.2 --cleanup-tag --yes
 - **HACS** — `hacs.json` должен оставаться таким: `name`, `homeassistant`, `render_readme`,
   `zip_release: true`, `filename: photoframe.zip`. Без `zip_release` HACS поставит исходники без интерфейса и APK.
   Предупреждение HACS про `categories` — только подсказка, его не исправить без ошибки hassfest.
+
+## Публикация в магазине HACS (один раз)
+
+Сейчас интеграцию ставят как пользовательский репозиторий. Чтобы она была в поиске HACS у всех, репозиторий
+добавляют в [hacs/default](https://github.com/hacs/default). Требования: <https://hacs.xyz/docs/publish/include>.
+
+Уже выполнено: репозиторий публичный, есть описание, темы, Issues и лицензия MIT; `hacs.json` с `name`;
+значок в `custom_components/photoframe/brand/`; домена `photoframe` нет среди встроенных интеграций HA;
+в Validate проходят hassfest и HACS action без `ignore` (предупреждение про `categories` — не ошибка).
+
+1. Убедиться, что последний Validate на `main` зелёный, и **после него** выпустить релиз (см. выше).
+
+2. Ссылки для заявки:
+
+   ```bash
+   gh release view --repo ha-workshop/ha-photoframe --json url -q .url
+   gh run list --repo ha-workshop/ha-photoframe --workflow Validate --branch main --status success --limit 1 --json url -q '.[0].url'
+   ```
+
+   Ссылка на запуск Validate годится и для HACS action, и для hassfest — оба шага в нём.
+
+3. Заявка — с **личного** аккаунта (не организации), из ветки форка:
+
+   ```bash
+   gh repo fork hacs/default --clone --remote && cd default
+   git switch -c add-ha-photoframe
+   ```
+
+   В файл `integration` добавить строку `"ha-workshop/ha-photoframe",` **по алфавиту** (без учёта регистра;
+   сейчас — между `ha-warmup/warmup` и `habity-design/…`). Проверить, что JSON цел:
+
+   ```bash
+   jq empty integration && git commit -am "Add ha-workshop/ha-photoframe" && git push -u origin add-ha-photoframe
+   gh pr create --repo hacs/default --title "Add ha-workshop/ha-photoframe" --body-file ../pr-body.md
+   ```
+
+4. Текст заявки (`pr-body.md`) — шаблон hacs/default, все пункты отмечены, ссылки из шага 2:
+
+   ```markdown
+   ## Checklist
+
+   - [x] I've read the [publishing documentation](https://hacs.xyz/docs/publish/start).
+   - [x] I've added the [HACS action](https://hacs.xyz/docs/publish/action) to my repository.
+   - [x] (For integrations only) I've added the [hassfest action](https://developers.home-assistant.io/blog/2020/04/16/hassfest/) to my repository.
+   - [x] The actions are passing without any disabled checks in my repository.
+   - [x] I've added a link to the action run on my repository below in the links section.
+   - [x] I've created a new release of the repository after the validation actions were run successfully.
+
+   ## Links
+
+   Link to current release: <ссылка на релиз>
+   Link to successful HACS action (without the `ignore` key): <ссылка на запуск Validate>
+   Link to successful hassfest action (if integration): <ссылка на запуск Validate>
+   ```
+
+   Ревью не запрашивать — HACS закрывает такие заявки. Замечания придут в заявке; черновик (draft) после
+   исправлений перевести в *Ready for review*.
+
+5. После принятия: в README заменить значок `HACS-Custom` на `HACS-Default`
+   (`https://img.shields.io/badge/HACS-Default-41BDF5.svg`, ссылка `https://hacs.xyz`) и убрать шаг
+   с пользовательским репозиторием.

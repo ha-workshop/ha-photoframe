@@ -1,0 +1,53 @@
+name: Bug report
+description: Something doesn't work as expected
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! Please check that you are on the latest release first.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected and what happened instead.
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Photo Frame version
+      description: HACS → Photo Frame, e.g. v0.2.5
+    validations:
+      required: true
+  - type: input
+    id: ha
+    attributes:
+      label: Home Assistant version
+      description: Settings → About, e.g. 2026.10.2
+    validations:
+      required: true
+  - type: dropdown
+    id: where
+    attributes:
+      label: Where
+      multiple: true
+      options:
+        - Dashboard card
+        - App in a browser (/photoframe/)
+        - Android frame app (APK)
+        - iPhone / iPad (Add to Home Screen)
+        - Integration (devices, entities, services)
+    validations:
+      required: true
+  - type: input
+    id: device
+    attributes:
+      label: Device
+      description: For frames — model and Android/iOS version, e.g. KJM-104K, Android 6.0.1
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: Settings → System → Logs, filtered by "photoframe". Remove tokens and addresses you don't want to share.
+      render: text
