@@ -1,0 +1,5 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Interface of the frame and the card
+    url: https://github.com/ha-workshop/lovelace-photoframe
+    about: Screens, cards and the photo screen are developed in lovelace-photoframe — you can still report here.

@@ -2,7 +2,7 @@
   "domain": "photoframe",
   "name": "Photo Frame",
   "codeowners": [
-    "@ha-workshop/maintainers"
+    "@ha-workshop"
   ],
   "config_flow": true,
   "dependencies": [
