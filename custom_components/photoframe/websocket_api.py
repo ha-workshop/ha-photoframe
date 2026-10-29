@@ -9,7 +9,7 @@ from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 
-from .const import CONF_EDIT, CONF_KIOSK, CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER, DOMAIN, EDIT_ADMINS
+from .const import ALBUM_ALL, CONF_EDIT, CONF_KIOSK, CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER, DOMAIN, EDIT_ADMINS
 from .store import KEYS, FrameStore, media_source_dir
 
 
@@ -23,6 +23,7 @@ def async_setup(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_frames)
     websocket_api.async_register_command(hass, ws_frame_set_lockscreen)
     websocket_api.async_register_command(hass, ws_frame_rename)
+    websocket_api.async_register_command(hass, ws_frame_album)
 
 
 def _entry(hass: HomeAssistant) -> ConfigEntry | None:
@@ -238,3 +239,27 @@ async def ws_frame_rename(hass: HomeAssistant, connection: websocket_api.ActiveC
         return
     await entry.runtime_data.frames.async_rename(msg["frame_id"], msg["name"])
     connection.send_result(msg["id"])
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "photoframe/frame/album",
+        vol.Required("frame_id"): str,
+        vol.Optional("album", default=ALBUM_ALL): str,
+    }
+)
+@websocket_api.async_response
+async def ws_frame_album(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """Рамка выбрала папку медиатеки: «вся папка» (ALBUM_ALL) или путь подпапки через «/».
+    Хранится у устройства рамки — так же, как выбор альбома в HA."""
+    entry = _entry(hass)
+    if entry is None:
+        _not_loaded(connection, msg["id"])
+        return
+    album = (msg.get("album") or "").strip().strip("/")
+    # Только внутри папки фото: без выхода наверх и абсолютных путей.
+    if album.startswith("/") or ".." in album.split("/"):
+        connection.send_error(msg["id"], "bad_album", "Bad album")
+        return
+    await entry.runtime_data.frames.async_set(msg["frame_id"], album=album or ALBUM_ALL)
+    connection.send_result(msg["id"], {"album": album or ALBUM_ALL})
