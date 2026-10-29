@@ -91,11 +91,11 @@ class FrameManager:
             self.store.async_notify()
 
     # ── Экраны: «Дом · Экран» для выбора стартового экрана рамки ──
-    def screen_options(self) -> dict[str, str]:
-        """Подпись → «дом/экран». Подписи уникальны: повтор получает номер."""
+    def screen_options(self, frame_id: str | None = None) -> dict[str, str]:
+        """Подпись → «дом/экран». У каждой рамки свои экраны; frame_id — её раскладка, иначе общая."""
         data = self.store.data
         homes = data.get("homes") or [{"id": "main", "name": "Home"}]
-        layouts = data.get("layouts") or {}
+        layouts = self.store.device_layouts(frame_id) or data.get("layouts") or {}
         many = len(homes) > 1
         out: dict[str, str] = {}
         for home in homes:
@@ -172,8 +172,9 @@ class FrameManager:
 
     @callback
     def async_set_layout(self, frame_id: str, data: dict[str, Any]) -> None:
-        """Рамка сообщила сетки экрана с фото (обе ориентации) и размер экрана — помним: другая рамка может
-        взять сетку, редактор в HA показывает экран рамки в её пропорциях (для каждой ориентации свой размер)."""
+        """Рамка сообщила сетки экрана с фото и размер экрана — помним: другая рамка может взять сетку,
+        редактор в HA показывает экран рамки в её пропорциях. Последний размер (display) — тот, в каком
+        рамку видели в последний раз: по нему редактор выбирает ориентацию, без ручного переключателя."""
         frame = self.frames.get(frame_id)
         if frame is None:
             return
@@ -189,8 +190,11 @@ class FrameManager:
             frame["grid_portrait"] = look.get("gridPortrait")
         display = data.get("display")
         if display and display.get("w") and display.get("h"):
-            orientation = "portrait" if display["h"] > display["w"] else "landscape"
-            frame.setdefault("displays", {})[orientation] = {"w": int(display["w"]), "h": int(display["h"])}
+            size = {"w": int(display["w"]), "h": int(display["h"])}
+            # В каком размере рамку видели в последний раз (повернули или сменили навигацию — новое значение).
+            frame["display"] = size
+            orientation = "portrait" if size["h"] > size["w"] else "landscape"
+            frame.setdefault("displays", {})[orientation] = size
         if frame != before:
             self.hass.async_create_task(self.store.async_save_data())
 

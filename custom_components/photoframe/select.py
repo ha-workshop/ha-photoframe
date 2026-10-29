@@ -50,17 +50,17 @@ class FrameStartScreen(FrameEntity, SelectEntity):
 
     @property
     def options(self) -> list[str]:
-        return list(self.manager.screen_options())
+        return list(self.manager.screen_options(self.frame_id))
 
     @property
     def current_option(self) -> str | None:
         value = self.manager.frame(self.frame_id).get("start_screen")
-        for label, key in self.manager.screen_options().items():
+        for label, key in self.manager.screen_options(self.frame_id).items():
             if key == value:
                 return label
         return None
 
     async def async_select_option(self, option: str) -> None:
-        key = self.manager.screen_options().get(option)
+        key = self.manager.screen_options(self.frame_id).get(option)
         if key:
             await self.manager.async_set(self.frame_id, start_screen=key)

@@ -1,4 +1,4 @@
-"""WebSocket API рамки: конфиг (дома, экраны, настройки) для карточки и PWA — через обычное подключение к HA."""
+"""WebSocket API рамки: конфиг (дома, экраны устройства, настройки) для карточки и PWA — через подключение к HA."""
 from __future__ import annotations
 
 from typing import Any
@@ -35,10 +35,14 @@ def _can_edit(entry: ConfigEntry, user: Any) -> bool:
     return bool(user and (user.is_admin or entry.options.get(CONF_EDIT, EDIT_ADMINS) != EDIT_ADMINS))
 
 
-def _payload(hass: HomeAssistant, entry: ConfigEntry, user: Any) -> dict[str, Any]:
-    """Конфиг для рамки: данные хранилища + настройки интеграции + может ли этот пользователь править."""
+def _payload(hass: HomeAssistant, entry: ConfigEntry, user: Any, frame_id: str | None = None) -> dict[str, Any]:
+    """Конфиг для рамки: данные хранилища + настройки интеграции + может ли этот пользователь править.
+    frame_id — раскладка этого устройства (у каждого своя); без него — общая, как образец для новых рамок."""
     store: FrameStore = entry.runtime_data
     data = {key: store.data[key] for key in KEYS if key in store.data}
+    own = store.device_layouts(frame_id)
+    if own is not None:
+        data["layouts"] = own
     return {
         **data,
         "media_folder": entry.options.get(CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER),
@@ -54,29 +58,41 @@ def _not_loaded(connection: websocket_api.ActiveConnection, msg_id: int) -> None
     connection.send_error(msg_id, "not_loaded", "Photo Frame is not set up")
 
 
-@websocket_api.websocket_command({vol.Required("type"): "photoframe/config"})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "photoframe/config",
+        vol.Optional("frame_id"): vol.All(str, vol.Length(min=8, max=64)),
+    }
+)
 @callback
 def ws_config(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
     entry = _entry(hass)
     if entry is None:
         _not_loaded(connection, msg["id"])
         return
-    connection.send_result(msg["id"], _payload(hass, entry, connection.user))
+    connection.send_result(msg["id"], _payload(hass, entry, connection.user, msg.get("frame_id")))
 
 
-@websocket_api.websocket_command({vol.Required("type"): "photoframe/config/subscribe"})
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "photoframe/config/subscribe",
+        vol.Optional("frame_id"): vol.All(str, vol.Length(min=8, max=64)),
+    }
+)
 @callback
 def ws_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
-    """Сразу текущий конфиг, потом — каждый раз, когда его кто-то сохранил (другая рамка, карточка)."""
+    """Сразу текущий конфиг, потом — каждый раз, когда его кто-то сохранил (другая рамка, карточка).
+    С frame_id в раскладках всегда лежит раскладка этого устройства, а не чужая."""
     entry = _entry(hass)
     if entry is None:
         _not_loaded(connection, msg["id"])
         return
     store: FrameStore = entry.runtime_data
+    frame_id = msg.get("frame_id")
 
     @callback
     def changed() -> None:
-        connection.send_message(websocket_api.event_message(msg["id"], _payload(hass, entry, connection.user)))
+        connection.send_message(websocket_api.event_message(msg["id"], _payload(hass, entry, connection.user, frame_id)))
 
     connection.subscriptions[msg["id"]] = store.async_listen(changed)
     connection.send_result(msg["id"])
@@ -89,6 +105,8 @@ def ws_subscribe(hass: HomeAssistant, connection: websocket_api.ActiveConnection
         vol.Optional("homes"): list,
         vol.Optional("layouts"): dict,
         vol.Optional("settings"): dict,
+        # Раскладка конкретного устройства: дома и настройки остаются общими, экраны — у каждой рамки свои.
+        vol.Optional("frame_id"): vol.All(str, vol.Length(min=8, max=64)),
     }
 )
 @websocket_api.async_response
@@ -101,7 +119,10 @@ async def ws_save(hass: HomeAssistant, connection: websocket_api.ActiveConnectio
         connection.send_error(msg["id"], websocket_api.ERR_UNAUTHORIZED, "Only administrators can change the frame")
         return
     store: FrameStore = entry.runtime_data
-    await store.async_update({key: msg[key] for key in KEYS if key in msg})
+    frame_id = msg.get("frame_id")
+    if frame_id and "layouts" in msg:
+        await store.async_set_device_layouts(frame_id, msg["layouts"])
+    await store.async_update({key: msg[key] for key in KEYS if key in msg and not (key == "layouts" and frame_id)})
     connection.send_result(msg["id"])
 
 
@@ -189,6 +210,8 @@ def ws_frames(hass: HomeAssistant, connection: websocket_api.ActiveConnection, m
                     "grid": frame.get("grid"),
                     "grid_portrait": frame.get("grid_portrait"),
                     "lockscreen": frame.get("lockscreen"),
+                    # Последний размер экрана: в нём редактор показывает рамку, ориентацию не выбирают вручную.
+                    "display": frame.get("display"),
                     "displays": frame.get("displays") or {},
                 }
                 for frame_id, frame in manager.frames.items()
