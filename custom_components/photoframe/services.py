@@ -40,8 +40,11 @@ def async_setup(hass: HomeAssistant) -> None:
         manager = _manager(hass)
         screen = call.data["screen"]
         # Можно подписью из списка («Квартира · Камеры») или «дом/экран».
-        key = manager.screen_options().get(screen, screen)
-        manager.async_command(_targets(manager, call), "show_screen", screen=key)
+        # Экраны у каждой рамки свои: подпись ищем в её раскладке, потом в общей (образец), иначе — как есть.
+        targets = _targets(manager, call)
+        for frame_id in targets if targets is not None else list(manager.frames):
+            key = manager.screen_options(frame_id).get(screen) or manager.screen_options().get(screen) or screen
+            manager.async_command([frame_id], "show_screen", screen=key)
 
     async def set_album(call: ServiceCall) -> None:
         manager = _manager(hass)

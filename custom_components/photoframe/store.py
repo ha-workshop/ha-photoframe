@@ -1,4 +1,4 @@
-"""Хранилище рамки: дома, экраны и настройки — общие для карточки на дашборде и для всех рамок (PWA, APK)."""
+"""Хранилище рамки: дома — общие, экраны — у каждой рамки свои (device_layouts), общая раскладка — образец для новых."""
 from __future__ import annotations
 
 import logging
@@ -72,6 +72,19 @@ class FrameStore:
     async def async_save_data(self) -> None:
         """Сохранить без рассылки конфига — для реестра рамок (рамкам он не нужен)."""
         await self._store.async_save(self.data)
+
+    # ── Настройки конкретного устройства ───────────────────
+    # Раньше раскладки были общие (data["layouts"]). Теперь каждая рамка хранит свою раскладку,
+    # а общая остаётся образцом для нового устройства, пока оно ничего не меняло.
+    def device_layouts(self, frame_id: str | None) -> dict[str, Any] | None:
+        if not frame_id:
+            return None
+        return (self.data.get("device_layouts") or {}).get(frame_id)
+
+    async def async_set_device_layouts(self, frame_id: str, layouts: dict[str, Any]) -> None:
+        devices = self.data.setdefault("device_layouts", {})
+        devices[frame_id] = layouts
+        await self.async_save_data()
 
     @callback
     def async_notify(self) -> None:
