@@ -140,6 +140,37 @@ def _list(root: Path, album: str) -> list[str]:
     return [str(p.relative_to(root)) for p in sorted(files, key=lambda p: p.name.lower())]
 
 
+def _walk(root: Path, max_depth: int = 8) -> list[dict[str, Any]]:
+    """Дерево папок медиатеки: путь от папки фото, фото в ней и всего в подпапках.
+    Папки без фото тоже нужны — по ним видно, куда складывать снимки."""
+    out: list[dict[str, Any]] = []
+
+    def scan(rel: str, depth: int) -> int:
+        folder = root / rel if rel else root
+        try:
+            entries = list(folder.iterdir())
+        except OSError:
+            return 0
+        direct = 0
+        subdirs: list[str] = []
+        for item in entries:
+            if item.name.startswith("."):
+                continue
+            if item.is_dir():
+                subdirs.append(item.name)
+            elif item.is_file() and item.suffix.lower() in IMAGE_EXT:
+                direct += 1
+        total = direct
+        if depth < max_depth:
+            for name in sorted(subdirs, key=str.lower):
+                total += scan(f"{rel}/{name}" if rel else name, depth + 1)
+        out.append({"path": rel, "count": direct, "total": total})
+        return total
+
+    scan("", 0)
+    return sorted(out, key=lambda x: x["path"].lower())
+
+
 class PhotoUploadView(HomeAssistantView):
     """Рамка присылает файл как есть (одно фото на запрос) — сервер обрабатывает и кладёт в альбом."""
 
@@ -244,6 +275,19 @@ async def ws_photos(hass: HomeAssistant, connection: websocket_api.ActiveConnect
     connection.send_result(msg["id"], {"photos": photos, "count": len(photos), "heic": HEIC})
 
 
+@websocket_api.websocket_command({vol.Required("type"): "photoframe/folders"})
+@websocket_api.async_response
+async def ws_folders(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """Папки медиатеки внутри папки фото — дерево для выбора «что показывать» на рамке."""
+    entry = _entry(hass)
+    root = photo_root(hass, entry) if entry else None
+    if root is None:
+        connection.send_result(msg["id"], {"folders": []})
+        return
+    folders = await hass.async_add_executor_job(_walk, root)
+    connection.send_result(msg["id"], {"folders": folders})
+
+
 def _cache_dir(hass: HomeAssistant) -> Path:
     return Path(hass.config.path(".storage", "photoframe_cache"))
 
@@ -277,3 +321,4 @@ def async_setup(hass: HomeAssistant) -> None:
     hass.http.register_view(PhotoUploadView())
     hass.http.register_view(PhotoView())
     websocket_api.async_register_command(hass, ws_photos)
+    websocket_api.async_register_command(hass, ws_folders)
