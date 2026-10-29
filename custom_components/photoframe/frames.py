@@ -160,10 +160,8 @@ class FrameManager:
             # Экран: включён ли (иначе спит — чёрный) и яркость в процентах.
             "screen_on": frame.get("screen_on", True),
             "brightness": frame.get("brightness", 100),
-            # Сетки из редактора в HA — только если их там задавали (иначе рамка живёт своими).
-            "layout": {"rev": frame["layout_rev"], "grid": frame.get("grid"), "grid_portrait": frame.get("grid_portrait")}
-            if frame.get("layout_rev")
-            else None,
+            # Экран с фото, заданный в HA, — только если его там задавали (иначе рамка живёт своим).
+            "lockscreen_push": frame.get("lockscreen_push"),
         }
 
     @callback
@@ -183,6 +181,12 @@ class FrameManager:
         for key in ("grid", "grid_portrait"):
             if key in data:
                 frame[key] = data[key]
+        # Весь вид экрана с фото (часы, цвета, виджеты, сетки) — чтобы показать и перенести на другие рамки.
+        look = data.get("lockscreen")
+        if isinstance(look, dict):
+            frame["lockscreen"] = look
+            frame["grid"] = look.get("grid")
+            frame["grid_portrait"] = look.get("gridPortrait")
         display = data.get("display")
         if display and display.get("w") and display.get("h"):
             orientation = "portrait" if display["h"] > display["w"] else "landscape"
@@ -190,15 +194,37 @@ class FrameManager:
         if frame != before:
             self.hass.async_create_task(self.store.async_save_data())
 
-    async def async_push_layout(self, frame_id: str, grid: dict[str, Any] | None, grid_portrait: dict[str, Any] | None) -> None:
-        """Сетки заданы в HA (редактор «Фоторамки»): номер правки растёт — рамка возьмёт их, даже если у неё
-        были свои, и не возьмёт старые повторно после переподключения."""
+    async def async_rename(self, frame_id: str, name: str) -> None:
+        """Рамку переименовали на ней самой (Настройки → Home Assistant): это имя устройства в HA —
+        как если бы переименовали в HA. Обычное подключение имя не меняет: там главное — имя из HA."""
+        frame = self.frames.get(frame_id)
+        name = name.strip()
+        if frame is None or not name:
+            return
+        registry = dr.async_get(self.hass)
+        device = registry.async_get_device(identifiers={(DOMAIN, frame_id)})
+        if device:
+            registry.async_update_device(device.id, name_by_user=name)
+        frame["name"] = name
+        await self.store.async_save_data()
+        send = self.online.get(frame_id)
+        if send:
+            send(self.state_message(frame_id))
+        async_dispatcher_send(self.hass, SIGNAL_FRAME_UPDATED.format(frame_id))
+
+    async def async_push_lockscreen(self, frame_id: str, patch: dict[str, Any]) -> None:
+        """Экран с фото задан в HA (редактор или «Скопировать на…» в разделе «Фоторамки»): рамка берёт эти поля
+        поверх своих. Номер правки растёт — рамка возьмёт их сразу или при подключении и не возьмёт повторно."""
         frame = self.frames.get(frame_id)
         if frame is None:
             return
-        frame["grid"] = grid
-        frame["grid_portrait"] = grid_portrait
-        frame["layout_rev"] = int(frame.get("layout_rev", 0)) + 1
+        rev = int((frame.get("lockscreen_push") or {}).get("rev", frame.get("layout_rev", 0))) + 1
+        frame["lockscreen_push"] = {"rev": rev, "patch": patch}
+        frame.pop("layout_rev", None)
+        look = {**(frame.get("lockscreen") or {}), **patch}
+        frame["lockscreen"] = look
+        frame["grid"] = look.get("grid")
+        frame["grid_portrait"] = look.get("gridPortrait")
         await self.store.async_save_data()
         send = self.online.get(frame_id)
         if send:

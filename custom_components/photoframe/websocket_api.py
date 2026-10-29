@@ -21,7 +21,8 @@ def async_setup(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_frame_connect)
     websocket_api.async_register_command(hass, ws_frame_report)
     websocket_api.async_register_command(hass, ws_frames)
-    websocket_api.async_register_command(hass, ws_frame_set_layout)
+    websocket_api.async_register_command(hass, ws_frame_set_lockscreen)
+    websocket_api.async_register_command(hass, ws_frame_rename)
 
 
 def _entry(hass: HomeAssistant) -> ConfigEntry | None:
@@ -143,6 +144,7 @@ def ws_frame_connect(hass: HomeAssistant, connection: websocket_api.ActiveConnec
         # Сетки экрана с фото этой рамки (горизонтальная и вертикальная) и размер её экрана.
         vol.Optional("grid"): vol.Any(None, dict),
         vol.Optional("grid_portrait"): vol.Any(None, dict),
+        vol.Optional("lockscreen"): dict,
         vol.Optional("display"): {vol.Required("w"): vol.Coerce(int), vol.Required("h"): vol.Coerce(int)},
     }
 )
@@ -155,8 +157,9 @@ def ws_frame_report(hass: HomeAssistant, connection: websocket_api.ActiveConnect
         return
     store: FrameStore = entry.runtime_data
     store.frames.async_report(msg["frame_id"], {k: msg[k] for k in ("photo", "photo_url", "screen") if k in msg})
-    if any(key in msg for key in ("grid", "grid_portrait", "display")):
-        store.frames.async_set_layout(msg["frame_id"], {k: msg[k] for k in ("grid", "grid_portrait", "display") if k in msg})
+    keys = ("grid", "grid_portrait", "lockscreen", "display")
+    if any(key in msg for key in keys):
+        store.frames.async_set_layout(msg["frame_id"], {k: msg[k] for k in keys if k in msg})
     if "screen_on" in msg:
         # Разбудили касанием (или уснула сама) — это настройка рамки, её помнит HA.
         hass.async_create_task(store.frames.async_set(msg["frame_id"], screen_on=msg["screen_on"]))
@@ -184,6 +187,7 @@ def ws_frames(hass: HomeAssistant, connection: websocket_api.ActiveConnection, m
                     "online": frame_id in manager.online,
                     "grid": frame.get("grid"),
                     "grid_portrait": frame.get("grid_portrait"),
+                    "lockscreen": frame.get("lockscreen"),
                     "displays": frame.get("displays") or {},
                 }
                 for frame_id, frame in manager.frames.items()
@@ -194,23 +198,43 @@ def ws_frames(hass: HomeAssistant, connection: websocket_api.ActiveConnection, m
 
 @websocket_api.websocket_command(
     {
-        vol.Required("type"): "photoframe/frame/set_layout",
-        vol.Required("frame_id"): str,
-        vol.Optional("grid"): vol.Any(None, dict),
-        vol.Optional("grid_portrait"): vol.Any(None, dict),
+        vol.Required("type"): "photoframe/frame/set_lockscreen",
+        vol.Required("frame_ids"): [str],
+        vol.Required("patch"): dict,
     }
 )
 @websocket_api.require_admin
 @websocket_api.async_response
-async def ws_frame_set_layout(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
-    """Редактор «Фоторамки» в HA: задать рамке сетки экрана с фото — рамка возьмёт их сразу (или при подключении)."""
+async def ws_frame_set_lockscreen(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """Раздел «Фоторамки»: задать рамкам экран с фото (сетки из редактора или всё, скопированное с другой рамки).
+    Рамка в сети берёт сразу, остальные — при подключении."""
     entry = _entry(hass)
     if entry is None:
         _not_loaded(connection, msg["id"])
         return
     manager = entry.runtime_data.frames
-    if msg["frame_id"] not in manager.frames:
-        connection.send_error(msg["id"], "not_found", "Unknown frame")
+    unknown = [f for f in msg["frame_ids"] if f not in manager.frames]
+    if unknown:
+        connection.send_error(msg["id"], "not_found", "Unknown frame: " + ", ".join(unknown))
         return
-    await manager.async_push_layout(msg["frame_id"], msg.get("grid"), msg.get("grid_portrait"))
+    for frame_id in msg["frame_ids"]:
+        await manager.async_push_lockscreen(frame_id, msg["patch"])
+    connection.send_result(msg["id"], {"online": [f for f in msg["frame_ids"] if f in manager.online]})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "photoframe/frame/rename",
+        vol.Required("frame_id"): str,
+        vol.Required("name"): vol.All(str, vol.Length(min=1, max=100)),
+    }
+)
+@websocket_api.async_response
+async def ws_frame_rename(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """Рамку переименовали на ней самой — меняем имя устройства в HA."""
+    entry = _entry(hass)
+    if entry is None:
+        _not_loaded(connection, msg["id"])
+        return
+    await entry.runtime_data.frames.async_rename(msg["frame_id"], msg["name"])
     connection.send_result(msg["id"])

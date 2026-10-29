@@ -26,7 +26,8 @@ echo "✓ $OUT"
 
 SDK="${ANDROID_HOME:-$HOME/Library/Android/sdk}"
 if [[ -d "$SDK/build-tools" ]]; then
-  VERSION=$(node -p "require('./custom_components/photoframe/manifest.json').version")
+  # VERSION — своя версия (./deploy.sh integration из lovelace-photoframe ставит -dev), иначе из manifest.json.
+  VERSION="${VERSION:-$(node -p "require('./custom_components/photoframe/manifest.json').version")}"
   APK_VERSION="$VERSION" "$SRC/android/build.sh" >/dev/null 2> >(grep -v "^Note:" >&2)
   cp "$SRC/android/build/photoframe.apk" "$OUT/pwa/photoframe.apk"
   echo "✓ $OUT/pwa/photoframe.apk ($VERSION)"
