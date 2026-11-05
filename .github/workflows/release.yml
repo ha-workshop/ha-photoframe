@@ -41,8 +41,28 @@ jobs:
           echo "KEYSTORE=$RUNNER_TEMP/frame.keystore" >> "$GITHUB_ENV"
       - run: scripts/build-frontend.sh zip
       - run: cp custom_components/photoframe/frontend/pwa/photoframe.apk photoframe.apk
+      - name: Build Electron (Linux)
+        run: |
+          cd frontend/electron
+          npm ci --no-audit --no-fund
+          npx electron-builder --linux --publish=never
+      - name: Build Electron (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          cd frontend/electron
+          npx electron-builder --mac --publish=never
+      - name: Build Electron (Windows)
+        if: runner.os == 'Windows'
+        run: |
+          cd frontend/electron
+          npx electron-builder --win --publish=never
       - uses: softprops/action-gh-release@v2
         with:
           files: |
             photoframe.zip
             photoframe.apk
+            frontend/electron/dist/*.dmg
+            frontend/electron/dist/*.zip
+            frontend/electron/dist/*.exe
+            frontend/electron/dist/*.AppImage
+            frontend/electron/dist/*.deb

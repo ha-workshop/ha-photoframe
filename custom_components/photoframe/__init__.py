@@ -119,7 +119,7 @@ class PwaNoCacheView(HomeAssistantView):
     """index.html, sw.js, манифест и APK рамки — без кэша: иначе после обновления интеграции рамка ещё долго
     берёт старое из кэша браузера. Файлы сборки (assets/ с хэшем в имени) кэшируются как обычно."""
 
-    url = URL_PWA + r"/{name:(?:index\.html|sw\.js|manifest\.webmanifest|photoframe\.apk)}"
+    url = URL_PWA + r"/{name:(?:index\.html|sw\.js|manifest\.webmanifest|photoframe\.apk|models/.+)}"
     name = "photoframe:pwa:nocache"
     requires_auth = False
 
@@ -131,6 +131,12 @@ class PwaNoCacheView(HomeAssistantView):
         if name.endswith(".apk"):
             # С этим типом Android сразу предлагает установить скачанный APK.
             headers["Content-Type"] = "application/vnd.android.package-archive"
+        elif name.endswith(".js") or name.endswith(".mjs"):
+            headers["Content-Type"] = "text/javascript"
+        elif name.endswith(".onnx"):
+            headers["Content-Type"] = "application/octet-stream"
+        elif name.endswith(".wasm"):
+            headers["Content-Type"] = "application/wasm"
         return web.FileResponse(path, headers=headers)
 
 
