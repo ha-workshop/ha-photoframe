@@ -73,6 +73,13 @@ Already using the **Photo Frame card** from HACS (category Dashboard)? On first 
 copies your homes and screens from the card on the *Photo Frame* dashboard. You can keep the card
 installed — the integration notices it and doesn't load a second copy — or remove it.
 
+**Samsung, LG or Android TV via Media Station X.** No separate app to build: install **Media Station X**
+from the TV store, open *Settings → Start Parameter → Setup* and enter the Home Assistant address with
+the port — for example, `192.168.1.10:8123`. MSX loads `/msx/start.json` from the integration and opens
+the frame right away. *Back* on the photo screen (or the remote's red button) returns to MSX, where you
+can open the frame again or change the address. Works on 2015+ TVs with MSX available.
+Details: [docs/MSX.md](docs/MSX.md).
+
 ## Development
 
 The interface is the [lovelace-photoframe](https://github.com/ha-workshop/lovelace-photoframe) submodule in

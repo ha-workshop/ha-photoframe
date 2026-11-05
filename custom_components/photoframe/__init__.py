@@ -21,7 +21,7 @@ from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.typing import ConfigType
 from homeassistant.loader import async_get_integration
 
-from . import photos, services, websocket_api
+from . import msx, photos, services, websocket_api
 from .const import CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER, DOMAIN, PLATFORMS, URL_CARD, URL_PWA
 from .frames import FrameManager
 from .store import FrameStore, async_ensure_media_folder
@@ -110,7 +110,9 @@ class PwaRedirectView(HomeAssistantView):
     requires_auth = False
 
     async def get(self, request: web.Request) -> web.Response:
-        raise web.HTTPFound(URL_PWA + "/index.html")
+        # Параметры не теряем: MSX открывает /photoframe/?tv=1, а каталог HA не отдаёт.
+        query = request.query_string
+        raise web.HTTPFound(URL_PWA + "/index.html" + (f"?{query}" if query else ""))
 
 
 class PwaNoCacheView(HomeAssistantView):
@@ -152,6 +154,8 @@ async def _async_register_frontend(hass: HomeAssistant) -> None:
         # Свои адреса регистрируются раньше раздачи каталога — поэтому срабатывают первыми.
         hass.http.register_view(PwaRedirectView())
         hass.http.register_view(PwaNoCacheView())
+        # MSX (телевизор): /msx/start.json открывает PWA рамки без сборки отдельного приложения.
+        msx.async_setup(hass)
         paths.append(StaticPathConfig(URL_PWA, str(pwa), cache_headers=False))
     if card.is_file():
         paths.append(StaticPathConfig(URL_CARD, str(card), cache_headers=False))
