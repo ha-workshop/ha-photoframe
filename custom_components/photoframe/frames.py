@@ -152,8 +152,12 @@ class FrameManager:
 
     def state_message(self, frame_id: str) -> dict[str, Any]:
         frame = self.frame(frame_id)
+        # HA device_id для этой рамки — чтобы PWA знала, какому устройству принадлежит.
+        registry = dr.async_get(self.hass)
+        device = registry.async_get_device(identifiers={(DOMAIN, frame_id)})
         return {
             "type": "state",
+            "device_id": device.id if device else None,
             "name": frame.get("name"),
             "album": frame.get("album") or ALBUM_ALL,
             "start_screen": frame.get("start_screen"),
