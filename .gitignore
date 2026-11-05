@@ -3,8 +3,7 @@ __pycache__/
 # Тестовый HA в Docker
 dev/config/
 .DS_Store
-custom_components/photoframe/frontend/*
-!custom_components/photoframe/frontend/pwa/models/
+custom_components/photoframe/frontend/
 dev/.test-user
 photoframe.zip
 photoframe.apk
