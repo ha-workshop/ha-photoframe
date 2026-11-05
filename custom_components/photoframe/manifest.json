@@ -19,5 +19,5 @@
   "requirements": [
     "pillow-heif==1.8.1"
   ],
-  "version": "1.6.0"
+  "version": "1.9.2"
 }
