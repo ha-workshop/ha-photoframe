@@ -1,6 +1,6 @@
 {
   "name": "Photo Frame",
-  "homeassistant": "2025.1.0",
+  "homeassistant": "2026.11.0",
   "render_readme": true,
   "zip_release": true,
   "filename": "photoframe.zip"
