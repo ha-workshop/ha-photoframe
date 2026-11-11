@@ -47,6 +47,25 @@ Services for automations (pick frames as devices; none — all online frames):
 The interface itself — photo screen like the iPhone lock screen, screens per home, a separate phone
 layout, charts — is described in [lovelace-photoframe](https://github.com/ha-workshop/lovelace-photoframe).
 
+## Photo sources and content
+
+A frame can show photos from the integration's own folder `/media/photoframe` or from any Home Assistant
+media folder: *My media*, Google Photos, an SMB drive, a folder from another integration. Pick the source
+in the frame settings on the device itself or in the **Photo Frames** section of the Home Assistant sidebar.
+
+- **Photo source** — any Home Assistant media folder. External sources are read-only: their files are
+  managed by the source integration.
+- **Album** — a folder selected inside `/media/photoframe` is stored as the frame's album. The **Album**
+  entity and the `photoframe.set_album` service keep working, and choosing a folder never conflicts with
+  the album.
+- **Upload folder** — where new photos are saved. It is a separate setting and does not depend on what the
+  frame is showing right now. Uploaded files always go to the local Photo Frame folder.
+- **Content management** — in **Photo Frames → Content**: previews and the number of available photos,
+  source picker, upload and delete. Deleting works only for the local Photo Frame folder.
+
+New photos can be uploaded from the frame settings or from the admin section. Uploading requires an
+administrator.
+
 ## Install
 
 1. Open the repository in HACS:

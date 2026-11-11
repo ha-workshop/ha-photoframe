@@ -13,7 +13,7 @@ from aiohttp import web
 
 from homeassistant.components import frontend, panel_custom
 from homeassistant.components.frontend import add_extra_js_url
-from homeassistant.components.http import HomeAssistantView, StaticPathConfig
+from homeassistant.components.http import HomeAssistantView, StaticPathConfig, KEY_HASS
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import config_validation as cv
@@ -125,7 +125,15 @@ class PwaNoCacheView(HomeAssistantView):
 
     async def get(self, request: web.Request, name: str) -> web.StreamResponse:
         path = FRONTEND / "pwa" / name
-        if not path.is_file():
+        # Проверка path traversal: путь должен остаться внутри pwa/.
+        try:
+            resolved = await request.app[KEY_HASS].async_add_executor_job(path.resolve)
+            pwa = FRONTEND / "pwa"
+            resolved.relative_to(pwa.resolve())
+        except (ValueError, OSError):
+            raise web.HTTPNotFound
+        is_file = await request.app[KEY_HASS].async_add_executor_job(resolved.is_file)
+        if not is_file:
             raise web.HTTPNotFound
         headers = {"Cache-Control": "no-cache"}
         if name.endswith(".apk"):
@@ -137,7 +145,10 @@ class PwaNoCacheView(HomeAssistantView):
             headers["Content-Type"] = "application/octet-stream"
         elif name.endswith(".wasm"):
             headers["Content-Type"] = "application/wasm"
-        return web.FileResponse(path, headers=headers)
+        # Для openWakeWord WASM: cross-origin isolation includes SharedArrayBuffer (WASM threads on iOS/Safari).
+        headers["Cross-Origin-Opener-Policy"] = "same-origin"
+        headers["Cross-Origin-Embedder-Policy"] = "require-corp"
+        return web.FileResponse(resolved, headers=headers)
 
 
 async def _async_register_frontend(hass: HomeAssistant) -> None:

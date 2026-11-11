@@ -114,7 +114,7 @@ class FrameManager:
     def async_connect(self, frame_id: str, info: dict[str, Any], send: Send) -> Callable[[], None]:
         frames = self.frames
         new = frame_id not in frames
-        frame = frames.setdefault(frame_id, {"album": ALBUM_ALL})
+        frame = frames.setdefault(frame_id, {"album": ALBUM_ALL, "media": "", "upload": ""})
         name = info.get("name") or frame.get("name") or f"Photo Frame {frame_id[:4]}"
         frame["name"] = frame.get("name") or name
         frame["model"] = info.get("model") or frame.get("model")
@@ -160,6 +160,10 @@ class FrameManager:
             "device_id": device.id if device else None,
             "name": frame.get("name"),
             "album": frame.get("album") or ALBUM_ALL,
+            # Папка медиатеки, выбранная на рамке: media_content_id любого источника.
+            "media": frame.get("media") or "",
+            # Куда складывать загруженные фото (внутри папки Photo Frame); null — как альбом рамки.
+            "upload": frame.get("upload"),
             "start_screen": frame.get("start_screen"),
             # Экран: включён ли (иначе спит — чёрный) и яркость в процентах.
             "screen_on": frame.get("screen_on", True),

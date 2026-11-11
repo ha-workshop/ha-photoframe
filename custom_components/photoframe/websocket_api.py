@@ -9,7 +9,8 @@ from homeassistant.components import websocket_api
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 
-from .const import ALBUM_ALL, CONF_EDIT, CONF_KIOSK, CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER, DOMAIN, EDIT_ADMINS
+from .const import ALBUM_ALL, CONF_EDIT, CONF_KIOSK, CONF_MEDIA_FOLDER, DEFAULT_MEDIA_FOLDER, DOMAIN, EDIT_ADMINS, MEDIA_SOURCE_ID
+from .photos import media_album_for, photo_media_root
 from .store import KEYS, FrameStore, media_source_dir
 
 
@@ -24,6 +25,8 @@ def async_setup(hass: HomeAssistant) -> None:
     websocket_api.async_register_command(hass, ws_frame_set_lockscreen)
     websocket_api.async_register_command(hass, ws_frame_rename)
     websocket_api.async_register_command(hass, ws_frame_album)
+    websocket_api.async_register_command(hass, ws_frame_media)
+    websocket_api.async_register_command(hass, ws_frame_upload)
 
 
 def _entry(hass: HomeAssistant) -> ConfigEntry | None:
@@ -201,6 +204,9 @@ def ws_frames(hass: HomeAssistant, connection: websocket_api.ActiveConnection, m
     connection.send_result(
         msg["id"],
         {
+            # Локальная папка Photo Frame в медиатеке — чтобы раздел «Фоторамки» показывал
+            # выбранный альбом и открывал выбор источника сразу в нужном месте.
+            "media_root": photo_media_root(hass, entry) or "",
             "frames": [
                 {
                     "frame_id": frame_id,
@@ -210,12 +216,18 @@ def ws_frames(hass: HomeAssistant, connection: websocket_api.ActiveConnection, m
                     "grid": frame.get("grid"),
                     "grid_portrait": frame.get("grid_portrait"),
                     "lockscreen": frame.get("lockscreen"),
+                    # Источник фото этой рамки и альбом — для управления контентом в разделе «Фоторамки».
+                    "media": frame.get("media") or "",
+                    "album": frame.get("album") or ALBUM_ALL,
+                    # Куда складывать загруженные файлы: путь внутри папки Photo Frame.
+                    # null — ещё не выбирали, берём альбом рамки (как раньше).
+                    "upload": frame.get("upload"),
                     # Последний размер экрана: в нём редактор показывает рамку, ориентацию не выбирают вручную.
                     "display": frame.get("display"),
                     "displays": frame.get("displays") or {},
                 }
                 for frame_id, frame in manager.frames.items()
-            ]
+            ],
         },
     )
 
@@ -286,3 +298,77 @@ async def ws_frame_album(hass: HomeAssistant, connection: websocket_api.ActiveCo
         return
     await entry.runtime_data.frames.async_set(msg["frame_id"], album=album or ALBUM_ALL)
     connection.send_result(msg["id"], {"album": album or ALBUM_ALL})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "photoframe/frame/media",
+        vol.Required("frame_id"): str,
+        vol.Optional("media", default=""): str,
+        # Сброс на обычную папку Photo Frame: заодно вернуть альбом (all — вся папка).
+        vol.Optional("album"): str,
+    }
+)
+@websocket_api.async_response
+async def ws_frame_media(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """Рамка или раздел «Фоторамки» выбрали папку медиатеки: любой источник HA (local, Google Photos, SMB).
+    Локальная папка Photo Frame — это альбом рамки, а не отдельный источник: так выбор папки и альбом
+    не конфликтуют. Пусто — обычная папка фото интеграции. Хранится у устройства рамки."""
+    entry = _entry(hass)
+    if entry is None:
+        _not_loaded(connection, msg["id"])
+        return
+    media = (msg.get("media") or "").strip()
+    if media and not MEDIA_SOURCE_ID.match(media):
+        connection.send_error(msg["id"], "bad_media", "Bad media source")
+        return
+
+    if media:
+        local_album = media_album_for(hass, entry, media)
+        if local_album is not None:
+            # Локальная папка внутри Photo Frame: храним как альбом, источник оставляем пустым.
+            await entry.runtime_data.frames.async_set(msg["frame_id"], media="", album=local_album)
+            connection.send_result(msg["id"], {"media": "", "album": local_album})
+            return
+        await entry.runtime_data.frames.async_set(msg["frame_id"], media=media)
+        frame = entry.runtime_data.frames.frame(msg["frame_id"])
+        connection.send_result(msg["id"], {"media": media, "album": frame.get("album") or ALBUM_ALL})
+        return
+
+    album = msg.get("album")
+    if album is not None:
+        album = (album or "").strip().strip("/")
+        if album and (album.startswith("/") or any(part in ("", ".", "..") for part in album.split("/"))):
+            connection.send_error(msg["id"], "bad_album", "Bad album")
+            return
+        await entry.runtime_data.frames.async_set(msg["frame_id"], media="", album=album or ALBUM_ALL)
+        connection.send_result(msg["id"], {"media": "", "album": album or ALBUM_ALL})
+        return
+    await entry.runtime_data.frames.async_set(msg["frame_id"], media="")
+    frame = entry.runtime_data.frames.frame(msg["frame_id"])
+    connection.send_result(msg["id"], {"media": "", "album": frame.get("album") or ALBUM_ALL})
+
+
+@websocket_api.websocket_command(
+    {
+        vol.Required("type"): "photoframe/frame/upload",
+        vol.Required("frame_id"): str,
+        vol.Required("upload"): str,
+    }
+)
+@websocket_api.async_response
+async def ws_frame_upload(hass: HomeAssistant, connection: websocket_api.ActiveConnection, msg: dict[str, Any]) -> None:
+    """Куда складывать новые фото: подпапка папки Photo Frame. Хранится у устройства рамки
+    и не зависит от того, что она показывает. Пусто — корень папки Photo Frame."""
+    entry = _entry(hass)
+    if entry is None:
+        _not_loaded(connection, msg["id"])
+        return
+    upload = (msg.get("upload") or "").strip().strip("/")
+    if upload == ALBUM_ALL:
+        upload = ""
+    if upload and (upload.startswith("/") or any(part in ("", ".", "..") for part in upload.split("/"))):
+        connection.send_error(msg["id"], "bad_upload", "Bad upload folder")
+        return
+    await entry.runtime_data.frames.async_set(msg["frame_id"], upload=upload)
+    connection.send_result(msg["id"], {"upload": upload})

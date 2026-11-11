@@ -1,5 +1,7 @@
 """Константы интеграции Photo Frame."""
 
+import re
+
 DOMAIN = "photoframe"
 
 # Хранилище: дома, их экраны и настройки слайдшоу — в том же виде, что в конфиге карточки дашборда.
@@ -29,3 +31,7 @@ SIGNAL_FRAME_ADDED = "photoframe_frame_added"
 SIGNAL_FRAME_UPDATED = "photoframe_frame_updated_{}"
 ALBUM_ALL = "all"
 MANUFACTURER = "ha-workshop"
+
+# Папка медиатеки HA: источник и путь. Подходит любой источник (local, Google Photos, SMB и т.п.).
+# media-source:// — корень со списком источников; папка всегда содержит домен источника.
+MEDIA_SOURCE_ID = re.compile(r"^media-source://(?!_)[\da-z_]+(?<!_)(?:/.+)?$")
