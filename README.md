@@ -82,6 +82,10 @@ administrator.
    (*Settings → Devices & services → Add integration → Photo Frame*.)
 4. Add the **Photo Frame** card to a dashboard (a *Panel* view works best) or open `/photoframe/` on a device.
 
+> **The card half is already published.** Photo Frame Card is in the HACS default list and the Home
+> Assistant Marketplace — search it by name, no custom repository. This integration is being added to
+> the same lists; until then install it as a custom repository.
+
 **Android frame** (wall tablet, old Android 5+): install the frame app — Home Assistant serves it at
 `http://<your-ha>/photoframe/photoframe.apk` (it's also attached to every release). Open it, enter the Home Assistant
 address, sign in. Photos are drawn natively (smooth even on weak tablets); the app starts on power-up, keeps
