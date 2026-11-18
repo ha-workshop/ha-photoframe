@@ -3,8 +3,8 @@
 Built files in `photoframe.zip` come from the submodule repository:
 
 - **Frontend source:** https://github.com/ha-workshop/lovelace-photoframe
-- **Commit (v1.9.3):** [`3fe9c861266267d4186c6f88d282dcee554a5cf1`](https://github.com/ha-workshop/lovelace-photoframe/tree/3fe9c861266267d4186c6f88d282dcee554a5cf1)
-  (tag [`v1.9.3`](https://github.com/ha-workshop/lovelace-photoframe/releases/tag/v1.9.3))
+- **Commit (v1.9.6):** [`dabddb21a6ea22f5c59330b1040d60e7913b9fc7`](https://github.com/ha-workshop/lovelace-photoframe/tree/dabddb21a6ea22f5c59330b1040d60e7913b9fc7)
+  (tag [`v1.9.6`](https://github.com/ha-workshop/lovelace-photoframe/releases/tag/v1.9.6))
 
 The files are built by:
 - `frontend/scripts/build-frontend.sh` — builds PWA (`dist/pwa/`) and card (`dist/photoframe-card.js`)

@@ -14,6 +14,37 @@ just like kiosk mode in the Home Assistant card.
 - In kiosk mode the app blocks display sleep; in a normal window it does not.
 - The device setting is stored per dashboard path in `localStorage` (`photoframe.kiosk:<path>`).
 
+## Connecting to Home Assistant
+
+The app does not ship with a server address: the same build works on any network.
+
+**First launch** opens the setup screen:
+
+1. The app looks for Home Assistant on the local network over mDNS (`_home-assistant._tcp`).
+2. Found servers are listed with their names — pick one.
+3. If discovery finds nothing (multicast blocked, different subnet, Docker bridge), enter the
+   address manually: `http://192.168.1.10:8123` or `homeassistant.local:8123`.
+
+Before saving, the app checks `<address>/manifest.json`, so a wrong or unreachable address is
+reported right away instead of showing an error page.
+
+The chosen address is stored per user in `server.json` inside the app data directory:
+
+- macOS: `~/Library/Application Support/photoframe/server.json`
+- Windows: `%APPDATA%\photoframe\server.json`
+- Linux: `~/.config/photoframe/server.json`
+
+**Changing the server later** — press `Ctrl/Cmd+Alt+S` in the frame window, or start with `--setup`:
+
+```bash
+npm start -- --setup
+```
+
+If the saved server stops responding (another network, HA moved), the setup screen opens by
+itself with the failed address pre-filled.
+
+The frame and Home Assistant only need to be on the same LAN: internet access is not required.
+
 ## Install from release
 
 Download the latest release from GitHub:
