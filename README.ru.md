@@ -8,6 +8,10 @@
 большие часы и погоду; смахнули вверх — свет, климат, камеры, колонки и телевизор. Интеграция приносит всё
 с собой: без отдельной карточки дашборда, аддонов и долгоживущих токенов.
 
+[![HACS & Marketplace](https://img.shields.io/badge/HACS%20%26%20Marketplace-41BDF5.svg)](https://hacs.xyz/)
+[![Release](https://img.shields.io/github/v/release/ha-workshop/ha-photoframe)](https://github.com/ha-workshop/ha-photoframe/releases)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
 ## Что внутри
 
 - **Карточка дашборда** `custom:photoframe-card` — доступна на всех дашбордах сразу после установки,
@@ -66,8 +70,7 @@
 
    [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ha-workshop&repository=ha-photoframe&category=integration)
 
-   Или вручную: HACS → поиск **Photo Frame**. Ещё нет в списке? HACS → ⋮ → «Пользовательские репозитории» →
-   `https://github.com/ha-workshop/ha-photoframe`, тип **Integration**.
+   Или вручную: HACS → поиск **Photo Frame**.
 2. Скачайте **Photo Frame** и перезапустите Home Assistant.
 3. Добавьте интеграцию:
 
@@ -76,9 +79,8 @@
    («Настройки → Устройства и службы → Добавить интеграцию → Photo Frame».)
 4. Добавьте карточку **Photo Frame** на дашборд (лучше в вид «Панель») или откройте `/photoframe/` на устройстве.
 
-> **Карточка уже опубликована.** Photo Frame Card есть в стандартном списке HACS и в Marketplace
-> Home Assistant — найдите её по названию, пользовательский репозиторий не нужен. Интеграция в эти же
-> списки только подаётся; до этого ставьте её как пользовательский репозиторий.
+> **Обе части уже в HACS.** Интеграция и карточка Photo Frame есть в стандартном списке HACS и в
+> Marketplace Home Assistant — найдите их по названию, пользовательский репозиторий добавлять не нужно.
 
 **Android-рамка** (настенный планшет, старый Android 5+): поставьте приложение рамки — Home Assistant раздаёт его
 по адресу `http://<ваш-HA>/photoframe/photoframe.apk` (оно же приложено к каждому релизу). Откройте его, укажите

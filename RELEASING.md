@@ -81,10 +81,14 @@ gh release delete v0.2.2 --cleanup-tag --yes
   `"categories": ["productivity_information.documents_photos"]` и проверить локально:
   `docker run --rm -v "$PWD":/github/workspace ghcr.io/home-assistant/hassfest`.
 
-## Публикация в магазине HACS (один раз)
+## Публикация в магазине HACS
 
-Сейчас интеграцию ставят как пользовательский репозиторий. Чтобы она была в поиске HACS у всех, репозиторий
-добавляют в [hacs/default](https://github.com/hacs/default). Требования: <https://hacs.xyz/docs/publish/include>.
+**Готово:** интеграция в стандартном списке HACS с 23 ноября 2026 (`hacs/default#13398`, мерж `3a9ada9`),
+карточка — с 9 ноября (`hacs/default#13400`). Пользователь находит оба пакета по названию, пользовательский
+репозиторий не нужен.
+
+Ниже — как это делалось: пригодится, если понадобится вернуть пакет в список или подать другой.
+Требования: <https://hacs.xyz/docs/publish/include>.
 
 Уже выполнено: репозиторий публичный, есть описание, темы, Issues и лицензия MIT; `hacs.json` с `name`;
 значок в `custom_components/photoframe/brand/`; домена `photoframe` нет среди встроенных интеграций HA;
@@ -138,6 +142,6 @@ gh release delete v0.2.2 --cleanup-tag --yes
    Ревью не запрашивать — HACS закрывает такие заявки. Замечания придут в заявке; черновик (draft) после
    исправлений перевести в *Ready for review*.
 
-5. После принятия: в README заменить значок `HACS-Custom` на `HACS-Default`
-   (`https://img.shields.io/badge/HACS-Default-41BDF5.svg`, ссылка `https://hacs.xyz`) и убрать шаг
-   с пользовательским репозиторием.
+5. После принятия: в README заменить значок `HACS-Custom` на `HACS & Marketplace`
+   (`https://img.shields.io/badge/HACS%20%26%20Marketplace-41BDF5.svg`, ссылка `https://hacs.xyz`) и убрать шаг
+   с пользовательским репозиторием. Для этой интеграции уже сделано.

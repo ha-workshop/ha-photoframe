@@ -8,7 +8,7 @@
 a big clock and the weather; swipe up for lights, climate, cameras, speakers and TV. This integration brings
 everything with it — no separate dashboard card, no add-ons, no long-lived tokens.
 
-[![HACS Custom](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://hacs.xyz/docs/faq/custom_repositories)
+[![HACS & Marketplace](https://img.shields.io/badge/HACS%20%26%20Marketplace-41BDF5.svg)](https://hacs.xyz/)
 [![Release](https://img.shields.io/github/v/release/ha-workshop/ha-photoframe)](https://github.com/ha-workshop/ha-photoframe/releases)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
@@ -72,8 +72,7 @@ administrator.
 
    [![Open in HACS](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?owner=ha-workshop&repository=ha-photoframe&category=integration)
 
-   Or by hand: HACS → search **Photo Frame**. Not in the list yet? HACS → ⋮ → **Custom repositories** →
-   `https://github.com/ha-workshop/ha-photoframe`, type **Integration**.
+   Or by hand: HACS → search **Photo Frame**.
 2. Download **Photo Frame**, restart Home Assistant.
 3. Add the integration:
 
@@ -82,9 +81,8 @@ administrator.
    (*Settings → Devices & services → Add integration → Photo Frame*.)
 4. Add the **Photo Frame** card to a dashboard (a *Panel* view works best) or open `/photoframe/` on a device.
 
-> **The card half is already published.** Photo Frame Card is in the HACS default list and the Home
-> Assistant Marketplace — search it by name, no custom repository. This integration is being added to
-> the same lists; until then install it as a custom repository.
+> **Both halves are in HACS.** The integration and the Photo Frame Card are in the HACS default list and
+> the Home Assistant Marketplace — search them by name, there is no custom repository to add.
 
 **Android frame** (wall tablet, old Android 5+): install the frame app — Home Assistant serves it at
 `http://<your-ha>/photoframe/photoframe.apk` (it's also attached to every release). Open it, enter the Home Assistant
